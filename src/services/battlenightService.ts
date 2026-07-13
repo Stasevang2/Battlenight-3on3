@@ -6,6 +6,7 @@ import {
   updateDoc,
   deleteDoc,
   query,
+  where,
   orderBy,
   Timestamp
 } from 'firebase/firestore';
@@ -52,14 +53,12 @@ export type Team = {
   createdAt: Date;
 };
 
-// Hent alle battlenights
 export const getBattlenights = async (): Promise<Battlenight[]> => {
   const q = query(collection(db, 'battlenights'), orderBy('createdAt', 'desc'));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Battlenight));
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Battlenight));
 };
 
-// Opret battlenight
 export const createBattlenight = async (data: Omit<Battlenight, 'id' | 'createdAt'>) => {
   const docRef = await addDoc(collection(db, 'battlenights'), {
     ...data,
@@ -68,22 +67,19 @@ export const createBattlenight = async (data: Omit<Battlenight, 'id' | 'createdA
   return docRef.id;
 };
 
-// Slet battlenight
 export const deleteBattlenight = async (id: string) => {
   await deleteDoc(doc(db, 'battlenights', id));
 };
 
-// Hent hold til et battlenight
 export const getTeamsForBattlenight = async (battlenightId: string): Promise<Team[]> => {
   const q = query(
     collection(db, 'teams'),
     where('battlenightId', '==', battlenightId)
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Team));
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Team));
 };
 
-// Opret hold
 export const createTeam = async (data: Omit<Team, 'id' | 'createdAt'>) => {
   const docRef = await addDoc(collection(db, 'teams'), {
     ...data,
@@ -92,23 +88,20 @@ export const createTeam = async (data: Omit<Team, 'id' | 'createdAt'>) => {
   return docRef.id;
 };
 
-// Opdater hold
 export const updateTeam = async (id: string, data: Partial<Team>) => {
   const docRef = doc(db, 'teams', id);
-  await updateDoc(docRef, data);
+  await updateDoc(docRef, { ...data });
 };
 
-// Hent vagter til et battlenight
 export const getShiftsForBattlenight = async (battlenightId: string): Promise<Shift[]> => {
   const q = query(
     collection(db, 'shifts'),
     where('battlenightId', '==', battlenightId)
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Shift));
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Shift));
 };
 
-// Tag en vagt
 export const takeShift = async (shiftId: string, userId: string, userName: string) => {
   const docRef = doc(db, 'shifts', shiftId);
   await updateDoc(docRef, {
