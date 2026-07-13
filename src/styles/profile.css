@@ -64,7 +64,6 @@
   line-height: 1.4;
 }
 
-/* Balance */
 .balance-card {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -174,7 +173,6 @@
 .history-row.negative .history-amount { color: #ff6464; }
 .history-row.penalty .history-amount { color: #ff9600; }
 
-/* Stats */
 .stats-card {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -228,7 +226,6 @@
   text-align: center;
 }
 
-/* Food orders */
 .food-orders-card {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -285,7 +282,6 @@
   color: #c8a951;
 }
 
-/* Contact */
 .contact-card {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -369,6 +365,11 @@
   cursor: pointer;
 }
 
+.save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .logout-btn {
   width: 100%;
   padding: 14px;
@@ -380,4 +381,77 @@
   font-weight: 700;
   cursor: pointer;
   margin-bottom: 20px;
+}
+
+/* Admin request */
+.admin-request-card {
+  background: rgba(200, 169, 81, 0.05);
+  border: 1px solid rgba(200, 169, 81, 0.2);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.admin-request-desc {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.5;
+  margin-bottom: 15px;
+}
+
+.admin-request-note {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 10px;
+  font-style: italic;
+}
+
+.admin-request-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #c8a951, #e8c97a);
+  border: none;
+  border-radius: 10px;
+  color: #0a1628;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-request-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.request-pending {
+  padding: 12px;
+  background: rgba(255, 150, 0, 0.1);
+  border: 1px solid rgba(255, 150, 0, 0.3);
+  border-radius: 8px;
+  color: rgba(255, 150, 0, 0.9);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.request-approved {
+  padding: 12px;
+  background: rgba(0, 200, 100, 0.1);
+  border: 1px solid rgba(0, 200, 100, 0.3);
+  border-radius: 8px;
+  color: #00c864;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.request-rejected {
+  padding: 12px;
+  background: rgba(255, 50, 50, 0.1);
+  border: 1px solid rgba(255, 50, 50, 0.3);
+  border-radius: 8px;
+  color: #ff6464;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
 }
