@@ -1,35 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { useAuth } from '../context/AuthContext';
+import { requestAdminRole, updateUser } from '../services/userService';
 import '../styles/profile.css';
-
-const mockUser = {
-  firstName: 'Alexander',
-  userId: 'ALEX17',
-  club: 'Rungsted Hockey',
-  birthYear: 2012,
-  playerNumber: 17,
-  balance: 75,
-  role: 'player',
-  contact: {
-    phone: '12345678',
-    snap: 'alexander_snap',
-    email: 'alexander@email.dk',
-  },
-  stats: {
-    attended: 12,
-    officialWins: 8,
-    officialLosses: 4,
-  },
-};
 
 const mockBalanceHistory = [
   { id: 1, type: 'deposit', description: 'MobilePay indbetaling', amount: 100, date: '10. Jan 2025' },
   { id: 2, type: 'deduct', description: 'Battlenight deltagelse', amount: -25, date: '11. Jan 2025' },
   { id: 3, type: 'deposit', description: 'MobilePay indbetaling', amount: 50, date: '3. Jan 2025' },
   { id: 4, type: 'penalty', description: 'No-show straf', amount: -12, date: '4. Jan 2025' },
-  { id: 5, type: 'deduct', description: 'Battlenight deltagelse', amount: -25, date: '28. Dec 2024' },
-  { id: 6, type: 'deposit', description: 'MobilePay indbetaling', amount: 100, date: '20. Dec 2024' },
 ];
 
 const mockFoodOrders = [
@@ -39,15 +19,55 @@ const mockFoodOrders = [
 
 function Profile() {
   const navigate = useNavigate();
+  const { currentUser, setCurrentUser } = useAuth();
   const [showBalanceHistory, setShowBalanceHistory] = useState(false);
   const [showFoodOrders, setShowFoodOrders] = useState(false);
-  const [contact, setContact] = useState(mockUser.contact);
+  const [contact, setContact] = useState({
+    phone: currentUser?.contact?.phone || '',
+    snap: currentUser?.contact?.snap || '',
+    email: currentUser?.contact?.email || '',
+  });
   const [saved, setSaved] = useState(false);
+  const [adminRequestSent, setAdminRequestSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  useEffect(() => {
+    if (currentUser?.adminRequest === 'pending') {
+      setAdminRequestSent(true);
+    }
+  }, [currentUser]);
+
+  const handleSave = async () => {
+    if (!currentUser?.id) return;
+    setIsLoading(true);
+    try {
+      await updateUser(currentUser.id, { contact });
+      setCurrentUser({ ...currentUser, contact });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      console.error(err);
+    }
+    setIsLoading(false);
   };
+
+  const handleAdminRequest = async () => {
+    if (!currentUser?.userId) return;
+    setIsLoading(true);
+    try {
+      await requestAdminRole(currentUser.userId);
+      setCurrentUser({ ...currentUser, adminRequest: 'pending' });
+      setAdminRequestSent(true);
+    } catch (err) {
+      console.error(err);
+    }
+    setIsLoading(false);
+  };
+
+  if (!currentUser) {
+    navigate('/');
+    return null;
+  }
 
   return (
     <div className="page-container">
@@ -59,20 +79,20 @@ function Profile() {
 
       <div className="content">
 
-        {/* Profil kort med User ID */}
+        {/* Profil kort */}
         <div className="profile-card">
           <div className="profile-avatar">
-            <span className="avatar-number">#{mockUser.playerNumber}</span>
+            <span className="avatar-number">#{currentUser.playerNumber}</span>
           </div>
-          <h2 className="profile-name">{mockUser.firstName}</h2>
+          <h2 className="profile-name">{currentUser.firstName}</h2>
           <div className="profile-user-id">
             <span>🪪 Bruger ID: </span>
-            <strong>{mockUser.userId}</strong>
+            <strong>{currentUser.userId}</strong>
           </div>
-          <p className="profile-club">{mockUser.club}</p>
-          <p className="profile-year">Årgang {mockUser.birthYear}</p>
+          <p className="profile-club">{currentUser.club}</p>
+          <p className="profile-year">Årgang {currentUser.birthYear}</p>
           <div className="mobilepay-hint">
-            <p>💳 Brug dit Bruger ID <strong>{mockUser.userId}</strong> som besked ved MobilePay indbetaling</p>
+            <p>💳 Brug dit Bruger ID <strong>{currentUser.userId}</strong> som besked ved MobilePay indbetaling</p>
           </div>
         </div>
 
@@ -80,20 +100,19 @@ function Profile() {
         <div className="balance-card">
           <div className="balance-info">
             <h3 className="balance-title">💰 Min Saldo</h3>
-            <span className={`balance-amount ${mockUser.balance < 0 ? 'negative' : 'positive'}`}>
-              {mockUser.balance} kr
+            <span className={`balance-amount ${(currentUser.balance || 0) < 0 ? 'negative' : 'positive'}`}>
+              {currentUser.balance || 0} kr
             </span>
           </div>
 
-          {mockUser.balance < 0 && (
+          {(currentUser.balance || 0) < 0 && (
             <div className="balance-warning">
               <p>⚠️ Du har negativ saldo</p>
-              <p>Indbetal via MobilePay med dit Bruger ID <strong>{mockUser.userId}</strong> som besked</p>
+              <p>Indbetal via MobilePay med dit Bruger ID <strong>{currentUser.userId}</strong> som besked</p>
               <p className="warning-note">⏰ Der kan gå 1-2 hverdage inden betalingen registreres</p>
             </div>
           )}
 
-          {/* Saldo historik toggle */}
           <button
             className="history-toggle"
             onClick={() => setShowBalanceHistory(!showBalanceHistory)}
@@ -123,15 +142,15 @@ function Profile() {
           <h3 className="card-title">📊 Min Statistik</h3>
           <div className="stats-row">
             <div className="stat-item">
-              <span className="stat-number">{mockUser.stats.attended}</span>
+              <span className="stat-number">0</span>
               <span className="stat-label">Deltagelser</span>
             </div>
             <div className="stat-item official">
-              <span className="stat-number">{mockUser.stats.officialWins}</span>
+              <span className="stat-number">0</span>
               <span className="stat-label">Officielle Sejre</span>
             </div>
             <div className="stat-item official">
-              <span className="stat-number">{mockUser.stats.officialLosses}</span>
+              <span className="stat-number">0</span>
               <span className="stat-label">Officielle Nederlag</span>
             </div>
           </div>
@@ -217,13 +236,60 @@ function Profile() {
           {saved && (
             <div className="save-confirmation">✅ Dine oplysninger er gemt!</div>
           )}
-          <button className="save-btn" onClick={handleSave}>
-            💾 Gem ændringer
+          <button className="save-btn" onClick={handleSave} disabled={isLoading}>
+            {isLoading ? '⏳ Gemmer...' : '💾 Gem ændringer'}
           </button>
         </div>
 
+        {/* Bliv Admin sektion */}
+        {currentUser.role === 'player' && (
+          <div className="admin-request-card">
+            <h3 className="card-title">🛡️ Bliv Admin/Vagt</h3>
+            <p className="admin-request-desc">
+              Som admin kan du tage vagter til Battlenights og hjælpe med at afvikle arrangementerne.
+              Forældre der tager vagter kan optjene kredit så deres barn ikke skal betale for at deltage.
+            </p>
+
+            {currentUser.adminRequest === 'rejected' && (
+              <div className="request-rejected">
+                ❌ Din anmodning blev afvist - kontakt en Super Admin for mere info
+              </div>
+            )}
+
+            {currentUser.adminRequest === 'approved' && (
+              <div className="request-approved">
+                ✅ Din anmodning er godkendt! Log ud og ind igen for at se ændringen
+              </div>
+            )}
+
+            {!adminRequestSent && currentUser.adminRequest !== 'rejected' && currentUser.adminRequest !== 'approved' && (
+              <>
+                <p className="admin-request-note">
+                  💡 Din anmodning sendes til Super Admin som godkender den
+                </p>
+                <button
+                  className="admin-request-btn"
+                  onClick={handleAdminRequest}
+                  disabled={isLoading}
+                >
+                  {isLoading ? '⏳ Sender...' : '🛡️ Anmod om Admin rolle'}
+                </button>
+              </>
+            )}
+
+            {adminRequestSent && currentUser.adminRequest !== 'rejected' && currentUser.adminRequest !== 'approved' && (
+              <div className="request-pending">
+                ⏳ Din anmodning afventer godkendelse fra Super Admin
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Log ud */}
-        <button className="logout-btn" onClick={() => navigate('/')}>
+        <button className="logout-btn" onClick={() => {
+          setCurrentUser(null);
+          navigate('/');
+        }}>
           🚪 Log ud
         </button>
       </div>
