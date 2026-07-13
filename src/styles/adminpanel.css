@@ -1,0 +1,318 @@
+.admin-tabs {
+  display: flex;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0 20px;
+}
+
+.admin-tab {
+  flex: 1;
+  padding: 12px 5px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.admin-tab.active {
+  color: #c8a951;
+  border-bottom-color: #c8a951;
+}
+
+.shifts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shift-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 15px;
+}
+
+.shift-card.taken {
+  border: 1px solid rgba(0, 200, 100, 0.3);
+}
+
+.shift-card.available {
+  border: 1px solid rgba(200, 169, 81, 0.3);
+}
+
+.shift-date {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.shift-time {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.shift-taken-by {
+  font-size: 0.8rem;
+  color: #00c864;
+  margin-top: 4px;
+}
+
+.take-shift-btn {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #c8a951, #e8c97a);
+  border: none;
+  border-radius: 8px;
+  color: #0a1628;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.teams-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-team-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 15px;
+}
+
+.admin-team-card.individual {
+  border-color: rgba(200, 169, 81, 0.15);
+}
+
+.admin-team-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.admin-team-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 3px;
+}
+
+.admin-team-details {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.equipment-badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.equipment-badge.full {
+  background: rgba(0, 200, 100, 0.15);
+  color: #00c864;
+  border: 1px solid #00c864;
+}
+
+.equipment-badge.basic {
+  background: rgba(200, 169, 81, 0.15);
+  color: #c8a951;
+  border: 1px solid #c8a951;
+}
+
+.individual-badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(100, 100, 255, 0.15);
+  color: rgba(150, 150, 255, 0.9);
+  border: 1px solid rgba(100, 100, 255, 0.3);
+}
+
+.admin-team-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.payment-btn {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.payment-btn.paid {
+  background: rgba(0, 200, 100, 0.15);
+  color: #00c864;
+  border: 1px solid #00c864;
+}
+
+.payment-btn.unpaid {
+  background: rgba(200, 169, 81, 0.15);
+  color: #c8a951;
+  border: 1px solid #c8a951;
+}
+
+.presence-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.presence-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+}
+
+.presence-btn.present.active {
+  background: rgba(0, 200, 100, 0.2);
+  border-color: #00c864;
+  color: #00c864;
+}
+
+.presence-btn.absent.active {
+  background: rgba(255, 50, 50, 0.2);
+  border-color: #ff6464;
+  color: #ff6464;
+}
+
+/* Presence status */
+.presence-status {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.present-status {
+  background: rgba(0, 200, 100, 0.1);
+  border: 1px solid rgba(0, 200, 100, 0.3);
+  color: #00c864;
+}
+
+.absent-status {
+  background: rgba(255, 50, 50, 0.1);
+  border: 1px solid rgba(255, 50, 50, 0.3);
+  color: #ff6464;
+}
+
+/* Messages */
+.message-sent-banner {
+  background: rgba(0, 200, 100, 0.15);
+  border: 1px solid #00c864;
+  color: #00c864;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+.broadcast-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.broadcast-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+}
+
+.broadcast-select {
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.broadcast-select option {
+  background: #0a1628;
+}
+
+.broadcast-textarea {
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+}
+
+.broadcast-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.broadcast-note {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.3);
+  font-style: italic;
+}
+
+.broadcast-btn {
+  padding: 14px;
+  background: linear-gradient(135deg, #c8a951, #e8c97a);
+  border: none;
+  border-radius: 10px;
+  color: #0a1628;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.broadcast-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.help-text {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 15px;
+}

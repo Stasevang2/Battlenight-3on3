@@ -1,0 +1,461 @@
+.page-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a1628 0%, #1a3a5c 50%, #0a1628 100%);
+  padding-bottom: 80px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 2px solid #c8a951;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+
+.back-btn {
+  background: transparent;
+  border: none;
+  color: #c8a951;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.page-title {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 3px;
+}
+
+.content {
+  padding: 20px;
+}
+
+/* Confirmation banners */
+.confirmation-banner {
+  background: rgba(0, 200, 100, 0.15);
+  border: 1px solid #00c864;
+  color: #00c864;
+  padding: 12px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.absence-banner {
+  background: rgba(255, 150, 0, 0.15);
+  border: 1px solid #ff9600;
+  color: #ff9600;
+  padding: 12px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Help text */
+.help-text {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+/* No team */
+.no-team-card {
+  text-align: center;
+  padding: 40px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+}
+
+.no-team-icon {
+  font-size: 4rem;
+  margin-bottom: 15px;
+}
+
+.no-team-card h2 {
+  font-size: 1.2rem;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.no-team-card p {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 20px;
+}
+
+/* Create team */
+.create-team-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(200, 169, 81, 0.3);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 5px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 15px;
+}
+
+.input-group label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+}
+
+.team-input {
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 0.95rem;
+  outline: none;
+  width: 100%;
+}
+
+.team-input:focus {
+  border-color: #c8a951;
+}
+
+.team-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Team card */
+.team-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(200, 169, 81, 0.3);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.team-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.team-name {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.team-leader-badge {
+  background: rgba(200, 169, 81, 0.2);
+  border: 1px solid #c8a951;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  color: #c8a951;
+  font-weight: 600;
+}
+
+.team-leader-name {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+
+.event-status-row {
+  margin-bottom: 15px;
+}
+
+.registered-badge {
+  background: rgba(0, 200, 100, 0.15);
+  border: 1px solid #00c864;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  color: #00c864;
+  font-weight: 600;
+}
+
+/* Equipment */
+.equipment-section {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.equipment-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 8px;
+}
+
+.equipment-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.equipment-btn {
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.equipment-btn.active {
+  background: rgba(200, 169, 81, 0.2);
+  border-color: #c8a951;
+  color: #c8a951;
+  font-weight: 600;
+}
+
+.equipment-desc {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+/* Section */
+.section {
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.section-subtitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 8px;
+  margin-top: 15px;
+}
+
+/* Players list */
+.players-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.player-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 12px 15px;
+}
+
+.player-number {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #c8a951;
+  min-width: 40px;
+}
+
+.player-info {
+  flex: 1;
+}
+
+.player-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.leader-tag {
+  font-size: 0.75rem;
+  color: #c8a951;
+}
+
+.player-details {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 2px;
+}
+
+.remove-btn {
+  background: rgba(255, 50, 50, 0.2);
+  border: 1px solid rgba(255, 50, 50, 0.3);
+  border-radius: 8px;
+  color: rgba(255, 100, 100, 0.9);
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.add-player-btn {
+  width: 100%;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 10px;
+}
+
+.add-player-btn:hover {
+  border-color: #c8a951;
+  color: #c8a951;
+}
+
+/* Available players */
+.available-players,
+.add-player-dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.available-player-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 15px;
+}
+
+.add-player-btn-small {
+  padding: 6px 12px;
+  background: rgba(200, 169, 81, 0.2);
+  border: 1px solid #c8a951;
+  border-radius: 8px;
+  color: #c8a951;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Invite section */
+.invite-section {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.invite-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.invite-btn {
+  padding: 10px 15px;
+  background: linear-gradient(135deg, #c8a951, #e8c97a);
+  border: none;
+  border-radius: 8px;
+  color: #0a1628;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.invite-note {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.3);
+  font-style: italic;
+}
+
+/* Actions */
+.action-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: all 0.3s ease;
+  letter-spacing: 1px;
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, #c8a951, #e8c97a);
+  color: #0a1628;
+}
+
+.action-btn.secondary {
+  background: transparent;
+  border: 1px solid rgba(200, 169, 81, 0.4);
+  color: #c8a951;
+}
+
+.action-btn.danger {
+  background: rgba(255, 50, 50, 0.15);
+  border: 1px solid rgba(255, 50, 50, 0.3);
+  color: rgba(255, 100, 100, 0.9);
+}
+
+.already-registered {
+  padding: 12px;
+  background: rgba(0, 200, 100, 0.1);
+  border: 1px solid rgba(0, 200, 100, 0.3);
+  border-radius: 10px;
+  text-align: center;
+  color: #00c864;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.absence-note {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Create team actions */
+.create-team-actions {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

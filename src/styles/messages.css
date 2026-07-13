@@ -1,0 +1,250 @@
+/* Category tabs */
+.message-categories {
+  display: flex;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.message-categories::-webkit-scrollbar {
+  display: none;
+}
+
+.category-tab {
+  flex: 1;
+  min-width: fit-content;
+  padding: 12px 10px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.category-tab.active {
+  color: #c8a951;
+  border-bottom-color: #c8a951;
+}
+
+.tab-badge {
+  background: #c8a951;
+  color: #0a1628;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+/* Conversations */
+.conversations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.conversation-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.conversation-card:hover {
+  background: rgba(200, 169, 81, 0.1);
+  border-color: rgba(200, 169, 81, 0.3);
+}
+
+.conv-avatar {
+  font-size: 1.8rem;
+  min-width: 45px;
+  text-align: center;
+}
+
+.conv-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.conv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.conv-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.conv-time {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.conv-last-message {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.conv-event-tag {
+  font-size: 0.72rem;
+  color: rgba(200, 169, 81, 0.6);
+  background: rgba(200, 169, 81, 0.08);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.challenge-pending-tag {
+  font-size: 0.72rem;
+  color: rgba(255, 150, 0, 0.8);
+  background: rgba(255, 150, 0, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.unread-badge {
+  background: #c8a951;
+  color: #0a1628;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  min-width: 22px;
+}
+
+/* Chat */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 130px);
+}
+
+.messages-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+}
+
+.message.mine {
+  align-items: flex-end;
+}
+
+.message.theirs {
+  align-items: flex-start;
+}
+
+.message-from {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 4px;
+  padding-left: 5px;
+}
+
+.message-bubble {
+  max-width: 75%;
+  padding: 10px 15px;
+  border-radius: 16px;
+}
+
+.message.mine .message-bubble {
+  background: linear-gradient(135deg, #c8a951, #e8c97a);
+  color: #0a1628;
+  border-bottom-right-radius: 4px;
+}
+
+.message.theirs .message-bubble {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-bottom-left-radius: 4px;
+}
+
+.message-bubble p {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.message-time {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  display: block;
+  margin-top: 4px;
+  text-align: right;
+}
+
+.message-input-container {
+  display: flex;
+  gap: 10px;
+  padding: 15px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  position: sticky;
+  bottom: 70px;
+}
+
+.message-input {
+  flex: 1;
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 25px;
+  color: #ffffff;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.message-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.send-btn {
+  width: 45px;
+  height: 45px;
+  background: linear-gradient(135deg, #c8a951, #e8c97a);
+  border: none;
+  border-radius: 50%;
+  color: #0a1628;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

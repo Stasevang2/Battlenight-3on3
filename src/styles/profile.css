@@ -1,0 +1,383 @@
+.profile-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(200, 169, 81, 0.3);
+  border-radius: 16px;
+  padding: 30px 20px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #c8a951, #e8c97a);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 15px;
+}
+
+.avatar-number {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #0a1628;
+}
+
+.profile-name {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.profile-user-id {
+  display: inline-block;
+  background: rgba(200, 169, 81, 0.15);
+  border: 1px solid rgba(200, 169, 81, 0.4);
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  color: #c8a951;
+  margin-bottom: 8px;
+}
+
+.profile-club {
+  font-size: 0.9rem;
+  color: #c8a951;
+  margin-bottom: 3px;
+}
+
+.profile-year {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 15px;
+}
+
+.mobilepay-hint {
+  background: rgba(0, 100, 255, 0.1);
+  border: 1px solid rgba(0, 100, 255, 0.2);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.4;
+}
+
+/* Balance */
+.balance-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.balance-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.balance-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.balance-amount {
+  font-size: 1.5rem;
+  font-weight: 900;
+}
+
+.balance-amount.positive {
+  color: #00c864;
+}
+
+.balance-amount.negative {
+  color: #ff6464;
+}
+
+.balance-warning {
+  padding: 12px;
+  background: rgba(255, 100, 0, 0.1);
+  border: 1px solid rgba(255, 100, 0, 0.3);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: rgba(255, 150, 50, 0.9);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.warning-note {
+  margin-top: 5px;
+  color: rgba(255, 200, 100, 0.7);
+}
+
+.history-toggle {
+  width: 100%;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+}
+
+.history-toggle:hover {
+  border-color: #c8a951;
+  color: #c8a951;
+}
+
+.balance-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.history-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.history-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.history-desc {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.history-date {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.history-amount {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.history-row.positive .history-amount { color: #00c864; }
+.history-row.negative .history-amount { color: #ff6464; }
+.history-row.penalty .history-amount { color: #ff9600; }
+
+/* Stats */
+.stats-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 15px;
+}
+
+.stats-row {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 10px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.stat-item.official {
+  border-left: 1px solid rgba(200, 169, 81, 0.2);
+  border-right: 1px solid rgba(200, 169, 81, 0.2);
+  padding: 0 15px;
+}
+
+.stat-number {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #c8a951;
+}
+
+.stat-label {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+}
+
+.stats-note {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.3);
+  font-style: italic;
+  text-align: center;
+}
+
+/* Food orders */
+.food-orders-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.view-all-btn {
+  background: transparent;
+  border: none;
+  color: #c8a951;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.food-orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.food-order-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+.order-event {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 3px;
+}
+
+.order-items {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.order-total {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #c8a951;
+}
+
+/* Contact */
+.contact-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.contact-subtitle {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 15px;
+}
+
+.contact-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.contact-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.contact-field label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+}
+
+.field-required {
+  color: #c8a951;
+  font-weight: 400;
+}
+
+.field-optional {
+  color: rgba(255, 255, 255, 0.3);
+  font-weight: 400;
+}
+
+.field-hint {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.contact-field input {
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.contact-field input:focus {
+  border-color: #c8a951;
+}
+
+.save-confirmation {
+  text-align: center;
+  color: #00c864;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+.save-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #c8a951, #e8c97a);
+  border: none;
+  border-radius: 10px;
+  color: #0a1628;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.logout-btn {
+  width: 100%;
+  padding: 14px;
+  background: rgba(255, 50, 50, 0.1);
+  border: 1px solid rgba(255, 50, 50, 0.3);
+  border-radius: 10px;
+  color: rgba(255, 100, 100, 0.9);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 20px;
+}

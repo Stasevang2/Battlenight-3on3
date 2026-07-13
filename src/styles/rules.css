@@ -1,0 +1,73 @@
+.rules-toggle {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 20px;
+}
+
+.rules-tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.rules-tab.active {
+  background: #c8a951;
+  color: #0a1628;
+}
+
+.rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rule-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.rule-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.rule-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.rule-arrow {
+  color: #c8a951;
+  font-size: 0.8rem;
+}
+
+.rule-content {
+  padding: 0 15px 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rule-content p {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+  padding-top: 12px;
+}

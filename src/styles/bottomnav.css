@@ -1,0 +1,39 @@
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(10, 22, 40, 0.95);
+  border-top: 1px solid rgba(200, 169, 81, 0.3);
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0;
+  backdrop-filter: blur(10px);
+  z-index: 100;
+}
+
+.nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 5px 20px;
+  transition: all 0.3s ease;
+}
+
+.nav-btn span:first-child {
+  font-size: 1.3rem;
+}
+
+.nav-btn.active {
+  color: #c8a951;
+}
+
+.nav-btn:hover {
+  color: #ffffff;
+}

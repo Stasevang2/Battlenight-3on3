@@ -1,0 +1,138 @@
+.food-subtitle {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 20px;
+}
+
+.food-section {
+  margin-bottom: 20px;
+}
+
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px 15px;
+}
+
+.item-emoji {
+  font-size: 1.5rem;
+  min-width: 35px;
+  text-align: center;
+}
+
+.item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.item-price {
+  font-size: 0.8rem;
+  color: #c8a951;
+}
+
+.item-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.qty-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qty-btn.plus {
+  background: linear-gradient(135deg, #c8a951, #e8c97a);
+  color: #0a1628;
+}
+
+.qty-btn.minus {
+  background: rgba(255, 50, 50, 0.2);
+  color: #ff6464;
+}
+
+.qty-number {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  min-width: 20px;
+  text-align: center;
+}
+
+.order-summary {
+  background: rgba(200, 169, 81, 0.1);
+  border: 1px solid rgba(200, 169, 81, 0.3);
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 10px;
+}
+
+.order-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 15px;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.order-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #c8a951;
+  padding: 10px 0;
+}
+
+.order-note {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.order-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #c8a951, #e8c97a);
+  border: none;
+  border-radius: 10px;
+  color: #0a1628;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+}

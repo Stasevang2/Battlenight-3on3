@@ -1,0 +1,248 @@
+.events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.event-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.event-card.open {
+  border-color: rgba(200, 169, 81, 0.3);
+}
+
+.event-card.full {
+  border-color: rgba(255, 50, 50, 0.3);
+  opacity: 0.7;
+}
+
+.event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.event-status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.event-status-badge.open {
+  background: rgba(0, 200, 100, 0.15);
+  color: #00c864;
+  border: 1px solid #00c864;
+}
+
+.event-status-badge.full {
+  background: rgba(255, 50, 50, 0.15);
+  color: #ff6464;
+  border: 1px solid #ff6464;
+}
+
+.event-shifts-btn {
+  background: rgba(200, 169, 81, 0.1);
+  border: 1px solid rgba(200, 169, 81, 0.3);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  color: #c8a951;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.event-shifts-btn:hover {
+  background: rgba(200, 169, 81, 0.2);
+}
+
+.event-date {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 5px;
+}
+
+.event-time {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 15px;
+}
+
+.spots-container {
+  margin-bottom: 15px;
+}
+
+.spots-bar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.spots-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #c8a951, #e8c97a);
+  border-radius: 4px;
+}
+
+.spots-text {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Individual players */
+.individual-toggle {
+  width: 100%;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+}
+
+.individual-toggle:hover {
+  border-color: #c8a951;
+  color: #c8a951;
+}
+
+.individual-players-list {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.individual-player {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.no-individual {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.3);
+  text-align: center;
+  padding: 5px;
+}
+
+.join-individual-btn {
+  width: 100%;
+  padding: 10px;
+  background: rgba(200, 169, 81, 0.15);
+  border: 1px solid #c8a951;
+  border-radius: 8px;
+  color: #c8a951;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 5px;
+}
+
+.registered-individual {
+  font-size: 0.85rem;
+  color: #00c864;
+  text-align: center;
+  padding: 5px;
+}
+
+/* Event actions */
+.event-actions {
+  margin-top: 10px;
+}
+
+.event-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.event-btn.primary {
+  background: linear-gradient(135deg, #c8a951, #e8c97a);
+  color: #0a1628;
+}
+
+.event-btn.disabled {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
+}
+
+/* Confirmation */
+.confirmation-banner {
+  background: rgba(0, 200, 100, 0.15);
+  border: 1px solid #00c864;
+  color: #00c864;
+  padding: 12px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Year calendar */
+.calendar-note {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 15px;
+}
+
+.year-calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.month-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 15px;
+}
+
+.month-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #c8a951;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.month-events {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.month-event-badge {
+  background: rgba(200, 169, 81, 0.1);
+  border: 1px solid rgba(200, 169, 81, 0.2);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+}

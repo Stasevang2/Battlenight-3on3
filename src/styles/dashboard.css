@@ -1,0 +1,284 @@
+.dashboard-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a1628 0%, #1a3a5c 50%, #0a1628 100%);
+  padding-bottom: 80px;
+}
+
+/* Header */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 2px solid #c8a951;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-logo {
+  width: 45px;
+  height: 45px;
+  object-fit: contain;
+}
+
+.header-title {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 3px;
+}
+
+.header-subtitle {
+  font-size: 0.7rem;
+  color: #c8a951;
+  letter-spacing: 2px;
+}
+
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.user-id-badge {
+  background: rgba(200, 169, 81, 0.15);
+  border: 1px solid rgba(200, 169, 81, 0.4);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  color: #c8a951;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.balance-badge {
+  background: rgba(0, 200, 100, 0.15);
+  border: 1px solid rgba(0, 200, 100, 0.4);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 0.8rem;
+  color: #00c864;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.user-badge {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Sections */
+.section {
+  padding: 20px;
+}
+
+.section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 15px;
+}
+
+/* Battlenight Card */
+.battlenight-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(200, 169, 81, 0.3);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.battlenight-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.battlenight-status.open {
+  background: rgba(0, 200, 100, 0.2);
+  color: #00c864;
+  border: 1px solid #00c864;
+}
+
+.battlenight-date {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.battlenight-time {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 15px;
+}
+
+.spots-container {
+  margin-bottom: 15px;
+}
+
+.spots-bar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.spots-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #c8a951, #e8c97a);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.spots-text {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.join-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.join-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #c8a951, #e8c97a);
+  border: none;
+  border-radius: 10px;
+  color: #0a1628;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+}
+
+.join-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(200, 169, 81, 0.4);
+}
+
+.join-btn-secondary {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid rgba(200, 169, 81, 0.4);
+  border-radius: 10px;
+  color: #c8a951;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.join-btn-secondary:hover {
+  background: rgba(200, 169, 81, 0.1);
+}
+
+/* Stats */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 15px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.stat-card.official {
+  border-color: rgba(200, 169, 81, 0.2);
+}
+
+.stat-number {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #c8a951;
+}
+
+.stat-label {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.stats-note {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+}
+
+/* Menu Grid */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.menu-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.menu-card:hover {
+  background: rgba(200, 169, 81, 0.1);
+  border-color: #c8a951;
+  transform: translateY(-2px);
+}
+
+.menu-card.admin {
+  border-color: rgba(200, 169, 81, 0.3);
+  background: rgba(200, 169, 81, 0.05);
+}
+
+.menu-card.superadmin {
+  border-color: rgba(200, 50, 255, 0.3);
+  background: rgba(200, 50, 255, 0.05);
+}
+
+.menu-icon {
+  font-size: 1.8rem;
+}
+
+.menu-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+  text-align: center;
+}
