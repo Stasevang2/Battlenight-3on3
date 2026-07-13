@@ -1,39 +1,42 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { useAuth } from '../context/AuthContext';
+import { getBattlenights } from '../services/battlenightService';
+import type { Battlenight } from '../services/battlenightService';
 import '../styles/dashboard.css';
-
-const mockUser = {
-  firstName: 'Alexander',
-  userId: 'ALEX17',
-  club: 'Rungsted Hockey',
-  balance: 75,
-  playerNumber: 17,
-  birthYear: 2012,
-  role: 'superadmin',
-};
-
-const mockBattlenight = {
-  date: 'Lørdag d. 18. Januar 2025',
-  time: '17:00 - 20:00',
-  spotsLeft: 8,
-  totalSpots: 36,
-  status: 'open',
-};
-
-const mockStats = {
-  attended: 12,
-  wins: 8,
-  losses: 4,
-  rank: 3,
-};
 
 function Dashboard() {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const [nextBattlenight, setNextBattlenight] = useState<Battlenight | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!currentUser) {
+      navigate('/');
+      return;
+    }
+    loadData();
+  }, [currentUser]);
+
+  const loadData = async () => {
+    try {
+      const events = await getBattlenights();
+      const openEvents = events.filter(e => e.status === 'open');
+      if (openEvents.length > 0) {
+        setNextBattlenight(openEvents[0]);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    setIsLoading(false);
+  };
+
+  if (!currentUser) return null;
 
   return (
     <div className="dashboard-container">
-
-      {/* Header */}
       <div className="dashboard-header">
         <div className="header-left">
           <img
@@ -50,70 +53,64 @@ function Dashboard() {
           </div>
         </div>
         <div className="header-right">
-          <div className="user-id-badge">🪪 {mockUser.userId}</div>
+          <div className="user-id-badge">🪪 {currentUser.userId}</div>
           <div className="balance-badge" onClick={() => navigate('/profile')}>
-            💰 {mockUser.balance} kr
+            💰 {currentUser.balance || 0} kr
           </div>
-          <div className="user-badge">👤 {mockUser.firstName}</div>
+          <div className="user-badge">👤 {currentUser.firstName}</div>
         </div>
       </div>
 
-      {/* Næste Battlenight kort */}
       <div className="section">
         <h2 className="section-title">🏒 Næste Battlenight</h2>
-        <div className="battlenight-card">
-          <div className="battlenight-status open">ÅBEN FOR TILMELDING</div>
-          <h3 className="battlenight-date">{mockBattlenight.date}</h3>
-          <p className="battlenight-time">⏰ {mockBattlenight.time}</p>
-          <div className="spots-container">
-            <div className="spots-bar">
-              <div
-                className="spots-fill"
-                style={{ width: `${((mockBattlenight.totalSpots - mockBattlenight.spotsLeft) / mockBattlenight.totalSpots) * 100}%` }}
-              />
+        {isLoading ? (
+          <p className="loading-text">⏳ Henter events...</p>
+        ) : nextBattlenight ? (
+          <div className="battlenight-card">
+            <div className="battlenight-status open">ÅBEN FOR TILMELDING</div>
+            <h3 className="battlenight-date">{nextBattlenight.date}</h3>
+            <p className="battlenight-time">⏰ {nextBattlenight.time}</p>
+            <p className="battlenight-price">💰 {nextBattlenight.price} kr pr. spiller</p>
+            <div className="join-options">
+              <button className="join-btn" onClick={() => navigate('/myteam')}>
+                👥 Tilmeld med hold
+              </button>
+              <button className="join-btn-secondary" onClick={() => navigate('/calendar')}>
+                🏒 Se alle events
+              </button>
             </div>
-            <p className="spots-text">
-              {mockBattlenight.totalSpots - mockBattlenight.spotsLeft} / {mockBattlenight.totalSpots} spillere tilmeldt
-            </p>
           </div>
-
-          {/* Tilmeldings knapper */}
-          <div className="join-options">
-            <button className="join-btn" onClick={() => navigate('/myteam')}>
-              👥 Tilmeld med hold
-            </button>
-            <button className="join-btn-secondary" onClick={() => navigate('/calendar')}>
-              🏒 Tilmeld som individuel
-            </button>
+        ) : (
+          <div className="no-battlenight">
+            <p>🏒 Ingen kommende Battlenights endnu</p>
+            <p>Hold øje med appen!</p>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Quick Stats */}
       <div className="section">
         <h2 className="section-title">📊 Min Statistik</h2>
         <div className="stats-grid">
           <div className="stat-card">
-            <span className="stat-number">{mockStats.attended}</span>
+            <span className="stat-number">0</span>
             <span className="stat-label">Deltagelser</span>
           </div>
           <div className="stat-card official">
-            <span className="stat-number">{mockStats.wins}</span>
+            <span className="stat-number">0</span>
             <span className="stat-label">Officielle Sejre</span>
           </div>
           <div className="stat-card official">
-            <span className="stat-number">{mockStats.losses}</span>
+            <span className="stat-number">0</span>
             <span className="stat-label">Officielle Nederlag</span>
           </div>
           <div className="stat-card">
-            <span className="stat-number">#{mockStats.rank}</span>
+            <span className="stat-number">-</span>
             <span className="stat-label">Rangliste</span>
           </div>
         </div>
         <p className="stats-note">⚔️ Sejre og nederlag er kun fra officielle udfordringskampe</p>
       </div>
 
-      {/* Navigation Menu */}
       <div className="section">
         <h2 className="section-title">🎮 Menu</h2>
         <div className="menu-grid">
@@ -141,13 +138,13 @@ function Dashboard() {
             <span className="menu-icon">📋</span>
             <span className="menu-label">Regler</span>
           </button>
-          {(mockUser.role === 'admin' || mockUser.role === 'superadmin') && (
+          {(currentUser.role === 'admin' || currentUser.role === 'superadmin') && (
             <button className="menu-card admin" onClick={() => navigate('/admin')}>
               <span className="menu-icon">🛡️</span>
               <span className="menu-label">Admin</span>
             </button>
           )}
-          {mockUser.role === 'superadmin' && (
+          {currentUser.role === 'superadmin' && (
             <button className="menu-card superadmin" onClick={() => navigate('/superadmin')}>
               <span className="menu-icon">⚙️</span>
               <span className="menu-label">Super Admin</span>

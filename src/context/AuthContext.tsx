@@ -38,10 +38,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      currentUser, 
-      setCurrentUser: handleSetCurrentUser, 
-      isLoading 
+    <AuthContext.Provider value={{
+      currentUser,
+      setCurrentUser: handleSetCurrentUser,
+      isLoading
     }}>
       {children}
     </AuthContext.Provider>

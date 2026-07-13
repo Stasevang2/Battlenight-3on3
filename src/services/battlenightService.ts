@@ -21,15 +21,27 @@ export type Battlenight = {
   price: number;
   status: 'open' | 'closed' | 'completed';
   zones: number;
-  createdAt: Date;
+  maxShifts: number;
+  createdAt: Timestamp;
 };
 
 export type Shift = {
   id?: string;
   battlenightId: string;
+  shiftNumber: number;
   takenBy: string | null;
   takenByName: string | null;
   taken: boolean;
+};
+
+export type TeamPlayer = {
+  userId: string;
+  firstName: string;
+  playerNumber: number;
+  club: string;
+  birthYear: number;
+  status: 'accepted' | 'pending' | 'rejected' | 'placeholder';
+  placeholderName?: string;
 };
 
 export type Team = {
@@ -38,19 +50,25 @@ export type Team = {
   teamName: string;
   leaderId: string;
   leaderName: string;
-  players: {
-    id: string;
-    firstName: string;
-    playerNumber: number;
-    club: string;
-    birthYear: number;
-    userId: string;
-  }[];
+  players: TeamPlayer[];
   equipment: 'full' | 'basic';
   paid: boolean;
   present: boolean | null;
   isIndividual: boolean;
-  createdAt: Date;
+  createdAt: Timestamp;
+};
+
+export type TeamInvite = {
+  id?: string;
+  teamId: string;
+  teamName: string;
+  battlenightId: string;
+  battlenightDate: string;
+  fromUserId: string;
+  fromUserName: string;
+  toUserId: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  createdAt: Timestamp;
 };
 
 export const getBattlenights = async (): Promise<Battlenight[]> => {
@@ -64,7 +82,23 @@ export const createBattlenight = async (data: Omit<Battlenight, 'id' | 'createdA
     ...data,
     createdAt: Timestamp.now(),
   });
+
+  for (let i = 1; i <= data.maxShifts; i++) {
+    await addDoc(collection(db, 'shifts'), {
+      battlenightId: docRef.id,
+      shiftNumber: i,
+      takenBy: null,
+      takenByName: null,
+      taken: false,
+    });
+  }
+
   return docRef.id;
+};
+
+export const updateBattlenight = async (id: string, data: Partial<Battlenight>) => {
+  const docRef = doc(db, 'battlenights', id);
+  await updateDoc(docRef, { ...data });
 };
 
 export const deleteBattlenight = async (id: string) => {
@@ -75,6 +109,15 @@ export const getTeamsForBattlenight = async (battlenightId: string): Promise<Tea
   const q = query(
     collection(db, 'teams'),
     where('battlenightId', '==', battlenightId)
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Team));
+};
+
+export const getTeamsByLeader = async (leaderId: string): Promise<Team[]> => {
+  const q = query(
+    collection(db, 'teams'),
+    where('leaderId', '==', leaderId)
   );
   const snapshot = await getDocs(q);
   return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Team));
@@ -109,4 +152,67 @@ export const takeShift = async (shiftId: string, userId: string, userName: strin
     takenBy: userId,
     takenByName: userName,
   });
+};
+
+export const createTeamInvite = async (data: Omit<TeamInvite, 'id' | 'createdAt'>) => {
+  const docRef = await addDoc(collection(db, 'teamInvites'), {
+    ...data,
+    createdAt: Timestamp.now(),
+  });
+  return docRef.id;
+};
+
+export const getInvitesForUser = async (userId: string): Promise<TeamInvite[]> => {
+  const q = query(
+    collection(db, 'teamInvites'),
+    where('toUserId', '==', userId),
+    where('status', '==', 'pending')
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as TeamInvite));
+};
+
+export const respondToInvite = async (
+  inviteId: string,
+  teamId: string,
+  userId: string,
+  accept: boolean
+) => {
+  const inviteRef = doc(db, 'teamInvites', inviteId);
+  await updateDoc(inviteRef, {
+    status: accept ? 'accepted' : 'rejected',
+  });
+
+  const teamSnapshot = await getDocs(
+    query(collection(db, 'teams'), where('__name__', '==', teamId))
+  );
+
+  if (!teamSnapshot.empty) {
+    const team = teamSnapshot.docs[0].data() as Team;
+    const updatedPlayers = team.players.map(p =>
+      p.userId === userId
+        ? { ...p, status: accept ? 'accepted' as const : 'rejected' as const }
+        : p
+    );
+    const teamRef = doc(db, 'teams', teamId);
+    await updateDoc(teamRef, { players: updatedPlayers });
+  }
+};
+
+export const signupIndividual = async (battlenightId: string, userId: string, userName: string) => {
+  await addDoc(collection(db, 'individualSignups'), {
+    battlenightId,
+    userId,
+    userName,
+    createdAt: Timestamp.now(),
+  });
+};
+
+export const getIndividualSignups = async (battlenightId: string) => {
+  const q = query(
+    collection(db, 'individualSignups'),
+    where('battlenightId', '==', battlenightId)
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 };

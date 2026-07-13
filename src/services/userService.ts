@@ -1,10 +1,10 @@
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  addDoc, 
-  updateDoc, 
-  query, 
+import {
+  collection,
+  doc,
+  getDocs,
+  addDoc,
+  updateDoc,
+  query,
   where,
   Timestamp
 } from 'firebase/firestore';
@@ -21,7 +21,7 @@ export type User = {
   role: 'player' | 'admin' | 'superadmin';
   balance: number;
   adminRequest?: 'pending' | 'approved' | 'rejected' | null;
-  adminRequestDate?: Date | null;
+  adminRequestDate?: Date | Timestamp | null;
   contact: {
     phone: string;
     snap: string;
@@ -37,7 +37,7 @@ export const generateUserId = (firstName: string, playerNumber: number): string 
 
 export const createUser = async (userData: Omit<User, 'id' | 'userId' | 'balance' | 'createdAt'>) => {
   const userId = generateUserId(userData.firstName, userData.playerNumber);
-  
+
   const existingUser = await getUserByUserId(userId);
   if (existingUser) {
     throw new Error(`Bruger ID ${userId} er allerede i brug - prøv et andet spillernummer`);
@@ -61,10 +61,10 @@ export const loginUser = async (firstName: string, password: string): Promise<Us
     where('firstName', '==', firstName),
     where('password', '==', password)
   );
-  
+
   const snapshot = await getDocs(q);
   if (snapshot.empty) return null;
-  
+
   const userDoc = snapshot.docs[0];
   return { id: userDoc.id, ...userDoc.data() } as User;
 };
@@ -74,10 +74,10 @@ export const getUserByUserId = async (userId: string): Promise<User | null> => {
     collection(db, 'users'),
     where('userId', '==', userId)
   );
-  
+
   const snapshot = await getDocs(q);
   if (snapshot.empty) return null;
-  
+
   const userDoc = snapshot.docs[0];
   return { id: userDoc.id, ...userDoc.data() } as User;
 };
@@ -100,9 +100,9 @@ export const requestAdminRole = async (userId: string) => {
   const q = query(collection(db, 'users'), where('userId', '==', userId));
   const snapshot = await getDocs(q);
   if (snapshot.empty) return;
-  
+
   const docRef = doc(db, 'users', snapshot.docs[0].id);
-  await updateDoc(docRef, { 
+  await updateDoc(docRef, {
     adminRequest: 'pending',
     adminRequestDate: Timestamp.now(),
   });
@@ -110,7 +110,7 @@ export const requestAdminRole = async (userId: string) => {
 
 export const approveAdminRequest = async (id: string) => {
   const docRef = doc(db, 'users', id);
-  await updateDoc(docRef, { 
+  await updateDoc(docRef, {
     role: 'admin',
     adminRequest: 'approved',
   });
@@ -118,7 +118,7 @@ export const approveAdminRequest = async (id: string) => {
 
 export const rejectAdminRequest = async (id: string) => {
   const docRef = doc(db, 'users', id);
-  await updateDoc(docRef, { 
+  await updateDoc(docRef, {
     adminRequest: 'rejected',
   });
 };
@@ -127,7 +127,7 @@ export const updateUserBalance = async (userId: string, newBalance: number) => {
   const q = query(collection(db, 'users'), where('userId', '==', userId));
   const snapshot = await getDocs(q);
   if (snapshot.empty) return;
-  
+
   const docRef = doc(db, 'users', snapshot.docs[0].id);
   await updateDoc(docRef, { balance: newBalance });
 };

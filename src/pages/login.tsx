@@ -31,7 +31,6 @@ function Login() {
 
     try {
       if (isCreating) {
-        // Opret ny bruger
         const newUser = await createUser({
           firstName: formData.firstName,
           password: formData.password,
@@ -39,16 +38,11 @@ function Login() {
           birthYear: Number(formData.birthYear),
           playerNumber: Number(formData.playerNumber),
           role: 'player',
-          contact: {
-            phone: '',
-            snap: '',
-            email: '',
-          },
+          contact: { phone: '', snap: '', email: '' },
         });
         setCurrentUser(newUser);
         navigate('/dashboard');
       } else {
-        // Log ind
         const user = await loginUser(formData.firstName, formData.password);
         if (!user) {
           setError('Forkert navn eller password - prøv igen');
@@ -65,24 +59,16 @@ function Login() {
         setError('Noget gik galt - prøv igen');
       }
     }
-
     setIsLoading(false);
   };
 
   return (
     <div className="login-container">
       <div className="login-box">
-
-        {/* Logo */}
         <div className="logo-container">
-          <img
-            src={logo}
-            alt="3on3 Battlenight Rungsted"
-            className="logo"
-          />
+          <img src={logo} alt="3on3 Battlenight Rungsted" className="logo" />
         </div>
 
-        {/* Toggle Login/Opret */}
         <div className="toggle-container">
           <button
             className={`toggle-btn ${!isCreating ? 'active' : ''}`}
@@ -98,14 +84,8 @@ function Login() {
           </button>
         </div>
 
-        {/* Fejl besked */}
-        {error && (
-          <div className="error-message">
-            ⚠️ {error}
-          </div>
-        )}
+        {error && <div className="error-message">⚠️ {error}</div>}
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="login-form">
           <div className="input-group">
             <label>Fornavn</label>
@@ -144,7 +124,6 @@ function Login() {
                   required
                 />
               </div>
-
               <div className="input-group">
                 <label>Årgang</label>
                 <input
@@ -156,7 +135,6 @@ function Login() {
                   required
                 />
               </div>
-
               <div className="input-group">
                 <label>Spillernummer</label>
                 <input

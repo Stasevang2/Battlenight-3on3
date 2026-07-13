@@ -53,7 +53,7 @@
 }
 
 .toggle-btn.active {
-  background: #cc0000;
+  background: #CC0000;
   color: #ffffff;
 }
 
@@ -89,7 +89,7 @@
 }
 
 .input-group input:focus {
-  border-color: #cc0000;
+  border-color: #CC0000;
   background: rgba(255, 255, 255, 0.12);
 }
 
@@ -100,7 +100,7 @@
 .submit-btn {
   margin-top: 10px;
   padding: 15px;
-  background: linear-gradient(135deg, #cc0000, #ff3333);
+  background: linear-gradient(135deg, #CC0000, #ff3333);
   border: none;
   border-radius: 10px;
   color: #ffffff;
@@ -117,6 +117,12 @@
   box-shadow: 0 8px 25px rgba(204, 0, 0, 0.4);
 }
 
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .error-message {
   background: rgba(204, 0, 0, 0.15);
   border: 1px solid rgba(204, 0, 0, 0.4);
@@ -126,12 +132,6 @@
   color: #ff6464;
   margin-bottom: 10px;
   text-align: center;
-}
-
-.submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
 }
 
 .gdpr-text {
