@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '../services/userService';
+import { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
+import type { User } from '../services/userService';
 
 type AuthContextType = {
   currentUser: User | null;
@@ -20,7 +21,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Tjek om bruger er gemt i localStorage
     const savedUser = localStorage.getItem('battlenight_user');
     if (savedUser) {
       setCurrentUser(JSON.parse(savedUser));
