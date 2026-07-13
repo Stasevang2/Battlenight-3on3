@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { loginUser, createUser } from '../services/userService';
+import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.svg';
 import '../styles/login.css';
 
 function Login() {
   const navigate = useNavigate();
+  const { setCurrentUser } = useAuth();
   const [isCreating, setIsCreating] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     firstName: '',
     password: '',
@@ -16,15 +21,52 @@ function Login() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isCreating) {
-      alert('Konto oprettet! (test)');
-    } else {
-      navigate('/dashboard');
+    setIsLoading(true);
+    setError('');
+
+    try {
+      if (isCreating) {
+        // Opret ny bruger
+        const newUser = await createUser({
+          firstName: formData.firstName,
+          password: formData.password,
+          club: formData.club,
+          birthYear: Number(formData.birthYear),
+          playerNumber: Number(formData.playerNumber),
+          role: 'player',
+          contact: {
+            phone: '',
+            snap: '',
+            email: '',
+          },
+        });
+        setCurrentUser(newUser);
+        navigate('/dashboard');
+      } else {
+        // Log ind
+        const user = await loginUser(formData.firstName, formData.password);
+        if (!user) {
+          setError('Forkert navn eller password - prøv igen');
+          setIsLoading(false);
+          return;
+        }
+        setCurrentUser(user);
+        navigate('/dashboard');
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Noget gik galt - prøv igen');
+      }
     }
+
+    setIsLoading(false);
   };
 
   return (
@@ -44,17 +86,24 @@ function Login() {
         <div className="toggle-container">
           <button
             className={`toggle-btn ${!isCreating ? 'active' : ''}`}
-            onClick={() => setIsCreating(false)}
+            onClick={() => { setIsCreating(false); setError(''); }}
           >
             Log ind
           </button>
           <button
             className={`toggle-btn ${isCreating ? 'active' : ''}`}
-            onClick={() => setIsCreating(true)}
+            onClick={() => { setIsCreating(true); setError(''); }}
           >
             Opret konto
           </button>
         </div>
+
+        {/* Fejl besked */}
+        {error && (
+          <div className="error-message">
+            ⚠️ {error}
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="login-form">
@@ -122,8 +171,8 @@ function Login() {
             </>
           )}
 
-          <button type="submit" className="submit-btn">
-            {isCreating ? '🏒 Opret konto' : '🏒 Log ind'}
+          <button type="submit" className="submit-btn" disabled={isLoading}>
+            {isLoading ? '⏳ Vent...' : isCreating ? '🏒 Opret konto' : '🏒 Log ind'}
           </button>
         </form>
 
