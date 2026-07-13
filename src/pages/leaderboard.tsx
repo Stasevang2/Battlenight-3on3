@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-missing-dom';
 import BottomNav from '../components/BottomNav';
 import '../styles/leaderboard.css';
 
@@ -28,17 +28,11 @@ function Leaderboard() {
 
   const myTeamRank = 3;
 
-  // Filtrer rangliste baseret på årgange
   const filteredLeaderboard = showAllYears
     ? mockLeaderboard
     : mockLeaderboard.filter(team =>
         Math.abs(team.birthYear - currentUserBirthYear) <= 1
       );
-
-  // Hold man kan udfordre (3 op og ned fra ens egen placering)
-  const challengeableTeams = filteredLeaderboard.filter(team =>
-    Math.abs(team.rank - myTeamRank) <= 3 && team.rank !== myTeamRank
-  );
 
   const handleChallenge = (teamName: string) => {
     setSelectedTeam(teamName);
