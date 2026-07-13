@@ -1,7 +1,6 @@
 import { 
   collection, 
   doc, 
-  getDoc, 
   getDocs, 
   addDoc, 
   updateDoc, 
@@ -28,23 +27,20 @@ export type User = {
   createdAt: Date;
 };
 
-// Generer unikt bruger ID
 export const generateUserId = (firstName: string, playerNumber: number): string => {
   const name = firstName.toUpperCase().slice(0, 4);
   return `${name}${playerNumber}`;
 };
 
-// Opret ny bruger
 export const createUser = async (userData: Omit<User, 'id' | 'userId' | 'balance' | 'createdAt'>) => {
   const userId = generateUserId(userData.firstName, userData.playerNumber);
   
-  // Tjek om userId allerede eksisterer
   const existingUser = await getUserByUserId(userId);
   if (existingUser) {
-    throw new Error(`Bruger ID ${userId} er allerede i brug`);
+    throw new Error(`Bruger ID ${userId} er allerede i brug - prøv et andet spillernummer`);
   }
 
-  const newUser: Omit<User, 'id'> = {
+  const newUser = {
     ...userData,
     userId,
     balance: 0,
@@ -55,7 +51,6 @@ export const createUser = async (userData: Omit<User, 'id' | 'userId' | 'balance
   return { id: docRef.id, ...newUser };
 };
 
-// Hent bruger via userId og password (login)
 export const loginUser = async (firstName: string, password: string): Promise<User | null> => {
   const q = query(
     collection(db, 'users'),
@@ -66,11 +61,10 @@ export const loginUser = async (firstName: string, password: string): Promise<Us
   const snapshot = await getDocs(q);
   if (snapshot.empty) return null;
   
-  const doc = snapshot.docs[0];
-  return { id: doc.id, ...doc.data() } as User;
+  const userDoc = snapshot.docs[0];
+  return { id: userDoc.id, ...userDoc.data() } as User;
 };
 
-// Hent bruger via userId
 export const getUserByUserId = async (userId: string): Promise<User | null> => {
   const q = query(
     collection(db, 'users'),
@@ -80,17 +74,15 @@ export const getUserByUserId = async (userId: string): Promise<User | null> => {
   const snapshot = await getDocs(q);
   if (snapshot.empty) return null;
   
-  const doc = snapshot.docs[0];
-  return { id: doc.id, ...doc.data() } as User;
+  const userDoc = snapshot.docs[0];
+  return { id: userDoc.id, ...userDoc.data() } as User;
 };
 
-// Hent alle brugere
 export const getAllUsers = async (): Promise<User[]> => {
   const snapshot = await getDocs(collection(db, 'users'));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+  return snapshot.docs.map(userDoc => ({ id: userDoc.id, ...userDoc.data() } as User));
 };
 
-// Opdater bruger saldo
 export const updateUserBalance = async (userId: string, newBalance: number) => {
   const q = query(collection(db, 'users'), where('userId', '==', userId));
   const snapshot = await getDocs(q);
@@ -100,8 +92,7 @@ export const updateUserBalance = async (userId: string, newBalance: number) => {
   await updateDoc(docRef, { balance: newBalance });
 };
 
-// Opdater bruger data
 export const updateUser = async (id: string, data: Partial<User>) => {
   const docRef = doc(db, 'users', id);
-  await updateDoc(docRef, data);
+  await updateDoc(docRef, { ...data });
 };
