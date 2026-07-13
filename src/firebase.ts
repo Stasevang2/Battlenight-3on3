@@ -2,12 +2,12 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBVpQ4rfByn4cJo8O-c34-V9rKr38G1h00",
-  authDomain: "battlenight-3on3.firebaseapp.com",
-  projectId: "battlenight-3on3",
-  storageBucket: "battlenight-3on3.firebasestorage.app",
-  messagingSenderId: "929735021504",
-  appId: "1:929735021504:web:da13eb7f7323a758b72e25"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
