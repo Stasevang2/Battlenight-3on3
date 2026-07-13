@@ -2,13 +2,25 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/adminpanel.css';
 
+type Team = {
+  id: number;
+  name: string;
+  leader: string;
+  players: number;
+  equipment: string;
+  paid: boolean;
+  present: boolean | null;
+  birthYear: number;
+  rank: number;
+};
+
 const mockShifts = [
   { id: 1, date: 'Lørdag d. 18. Januar 2025', time: '17:00 - 20:00', takenBy: 'Morten (Forælder)', taken: true },
   { id: 2, date: 'Lørdag d. 18. Januar 2025', time: '17:00 - 20:00', takenBy: null, taken: false },
   { id: 3, date: 'Lørdag d. 25. Januar 2025', time: '17:00 - 20:00', takenBy: null, taken: false },
 ];
 
-const mockTeams = [
+const mockTeams: Team[] = [
   { id: 1, name: 'Ice Kings', leader: 'Alexander', players: 3, equipment: 'full', paid: true, present: null, birthYear: 2012, rank: 3 },
   { id: 2, name: 'Rungsted Rockets', leader: 'Magnus', players: 3, equipment: 'basic', paid: false, present: null, birthYear: 2012, rank: 2 },
   { id: 3, name: 'Puck Masters', leader: 'Oliver', players: 3, equipment: 'full', paid: true, present: null, birthYear: 2011, rank: 5 },
@@ -29,7 +41,7 @@ function AdminPanel() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'shifts' | 'teams' | 'messages'>('shifts');
   const [shifts, setShifts] = useState(mockShifts);
-  const [teams, setTeams] = useState(mockTeams);
+  const [teams, setTeams] = useState<Team[]>(mockTeams);
   const [broadcastTarget, setBroadcastTarget] = useState('all-event');
   const [selectedTeam, setSelectedTeam] = useState('');
   const [selectedPlayer, setSelectedPlayer] = useState('');
@@ -62,7 +74,6 @@ function AdminPanel() {
         <div />
       </div>
 
-      {/* Tab navigation */}
       <div className="admin-tabs">
         <button className={`admin-tab ${activeTab === 'shifts' ? 'active' : ''}`} onClick={() => setActiveTab('shifts')}>
           🛡️ Vagter
@@ -107,7 +118,6 @@ function AdminPanel() {
         {activeTab === 'teams' && (
           <div>
             <h2 className="section-title">👥 Tilmeldte Hold - 18. Januar 2025</h2>
-
             <div className="teams-list">
               {teams.map(team => (
                 <div key={team.id} className="admin-team-card">
@@ -143,7 +153,6 @@ function AdminPanel() {
                       </button>
                     </div>
 
-                    {/* Status feedback */}
                     {team.present === true && (
                       <div className="presence-status present-status">
                         ✅ Holdet er registreret som mødt op
@@ -159,7 +168,6 @@ function AdminPanel() {
               ))}
             </div>
 
-            {/* Individuelle spillere */}
             <h2 className="section-title" style={{ marginTop: '25px' }}>🏒 Individuelle Spillere</h2>
             <div className="teams-list">
               {mockIndividualPlayers.map(player => (
