@@ -5,7 +5,8 @@ import {
   addDoc, 
   updateDoc, 
   query, 
-  where 
+  where,
+  Timestamp
 } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -19,6 +20,8 @@ export type User = {
   password: string;
   role: 'player' | 'admin' | 'superadmin';
   balance: number;
+  adminRequest?: 'pending' | 'approved' | 'rejected' | null;
+  adminRequestDate?: Date | null;
   contact: {
     phone: string;
     snap: string;
@@ -44,7 +47,8 @@ export const createUser = async (userData: Omit<User, 'id' | 'userId' | 'balance
     ...userData,
     userId,
     balance: 0,
-    createdAt: new Date(),
+    adminRequest: null,
+    createdAt: Timestamp.now(),
   };
 
   const docRef = await addDoc(collection(db, 'users'), newUser);
@@ -81,6 +85,42 @@ export const getUserByUserId = async (userId: string): Promise<User | null> => {
 export const getAllUsers = async (): Promise<User[]> => {
   const snapshot = await getDocs(collection(db, 'users'));
   return snapshot.docs.map(userDoc => ({ id: userDoc.id, ...userDoc.data() } as User));
+};
+
+export const getPendingAdminRequests = async (): Promise<User[]> => {
+  const q = query(
+    collection(db, 'users'),
+    where('adminRequest', '==', 'pending')
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(userDoc => ({ id: userDoc.id, ...userDoc.data() } as User));
+};
+
+export const requestAdminRole = async (userId: string) => {
+  const q = query(collection(db, 'users'), where('userId', '==', userId));
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) return;
+  
+  const docRef = doc(db, 'users', snapshot.docs[0].id);
+  await updateDoc(docRef, { 
+    adminRequest: 'pending',
+    adminRequestDate: Timestamp.now(),
+  });
+};
+
+export const approveAdminRequest = async (id: string) => {
+  const docRef = doc(db, 'users', id);
+  await updateDoc(docRef, { 
+    role: 'admin',
+    adminRequest: 'approved',
+  });
+};
+
+export const rejectAdminRequest = async (id: string) => {
+  const docRef = doc(db, 'users', id);
+  await updateDoc(docRef, { 
+    adminRequest: 'rejected',
+  });
 };
 
 export const updateUserBalance = async (userId: string, newBalance: number) => {
