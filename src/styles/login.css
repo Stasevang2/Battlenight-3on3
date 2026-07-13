@@ -117,6 +117,23 @@
   box-shadow: 0 8px 25px rgba(204, 0, 0, 0.4);
 }
 
+.error-message {
+  background: rgba(204, 0, 0, 0.15);
+  border: 1px solid rgba(204, 0, 0, 0.4);
+  border-radius: 10px;
+  padding: 10px 15px;
+  font-size: 0.85rem;
+  color: #ff6464;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .gdpr-text {
   margin-top: 15px;
   text-align: center;
