@@ -1,21 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  getAllUsers, 
+import {
+  getAllUsers,
   getPendingAdminRequests,
   approveAdminRequest,
   rejectAdminRequest,
   updateUser
 } from '../services/userService';
 import type { User } from '../services/userService';
+import {
+  getBattlenights,
+  createBattlenight,
+  deleteBattlenight,
+  updateBattlenight
+} from '../services/battlenightService';
+import type { Battlenight } from '../services/battlenightService';
+import { createNotification } from '../services/notificationService';
 import '../styles/superadminpanel.css';
-
-const mockMenuItems = [
-  { id: 1, category: 'Mad', name: 'Hotdog', price: 25, emoji: '🌭', available: true },
-  { id: 2, category: 'Mad', name: 'Pølse i brød', price: 20, emoji: '🌭', available: true },
-  { id: 3, category: 'Drikke', name: 'Vand', price: 10, emoji: '💧', available: true },
-  { id: 4, category: 'Drikke', name: 'Sodavand', price: 15, emoji: '🥤', available: true },
-];
 
 type MenuItem = {
   id: number;
@@ -26,21 +27,40 @@ type MenuItem = {
   available: boolean;
 };
 
+const mockMenuItems: MenuItem[] = [
+  { id: 1, category: 'Mad', name: 'Hotdog', price: 25, emoji: '🌭', available: true },
+  { id: 2, category: 'Mad', name: 'Pølse i brød', price: 20, emoji: '🌭', available: true },
+  { id: 3, category: 'Drikke', name: 'Vand', price: 10, emoji: '💧', available: true },
+  { id: 4, category: 'Drikke', name: 'Sodavand', price: 15, emoji: '🥤', available: true },
+];
+
 function SuperAdminPanel() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'requests' | 'events' | 'users' | 'settings' | 'menu'>('requests');
   const [users, setUsers] = useState<User[]>([]);
   const [pendingRequests, setPendingRequests] = useState<User[]>([]);
+  const [battlenights, setBattlenights] = useState<Battlenight[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
+  const [isLoading, setIsLoading] = useState(true);
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState<{ [key: string]: boolean }>({});
+  const [customAmount, setCustomAmount] = useState<{ [key: string]: string }>({});
+  const [newMenuItem, setNewMenuItem] = useState({ name: '', price: '', emoji: '🍽️', category: 'Mad' });
   const [price, setPrice] = useState(25);
   const [notifyHours, setNotifyHours] = useState({ first: 48, second: 6 });
   const [leaderboardActive, setLeaderboardActive] = useState(true);
-  const [expandedUser, setExpandedUser] = useState<string | null>(null);
-  const [customAmount, setCustomAmount] = useState<{ [key: string]: string }>({});
-  const [showPassword, setShowPassword] = useState<{ [key: string]: boolean }>({});
-  const [editingUser, setEditingUser] = useState<string | null>(null);
-  const [newMenuItem, setNewMenuItem] = useState({ name: '', price: '', emoji: '🍽️', category: 'Mad' });
-  const [isLoading, setIsLoading] = useState(true);
+  const [showNewEventForm, setShowNewEventForm] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    date: '',
+    time: '17:00 - 20:00',
+    maxTeams: 12,
+    maxPlayers: 36,
+    price: 25,
+    zones: 3,
+    maxShifts: 2,
+    status: 'open' as const,
+  });
 
   useEffect(() => {
     loadData();
@@ -49,24 +69,39 @@ function SuperAdminPanel() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [allUsers, pending] = await Promise.all([
+      const [allUsers, pending, events] = await Promise.all([
         getAllUsers(),
         getPendingAdminRequests(),
+        getBattlenights(),
       ]);
       setUsers(allUsers);
       setPendingRequests(pending);
+      setBattlenights(events);
     } catch (err) {
       console.error(err);
     }
     setIsLoading(false);
   };
 
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return 'Ukendt dato';
+    if (timestamp?.toDate) return timestamp.toDate().toLocaleDateString('da-DK');
+    if (timestamp instanceof Date) return timestamp.toLocaleDateString('da-DK');
+    return 'Ukendt dato';
+  };
+
   const handleApproveRequest = async (user: User) => {
     if (!user.id) return;
     try {
       await approveAdminRequest(user.id);
+      await createNotification({
+        toUserId: user.userId,
+        type: 'admin_request',
+        title: '✅ Admin anmodning godkendt!',
+        message: 'Du er nu admin og kan tage vagter til Battlenights!',
+      });
       setPendingRequests(prev => prev.filter(r => r.id !== user.id));
-      setUsers(prev => prev.map(u => 
+      setUsers(prev => prev.map(u =>
         u.id === user.id ? { ...u, role: 'admin', adminRequest: 'approved' } : u
       ));
     } catch (err) {
@@ -78,10 +113,44 @@ function SuperAdminPanel() {
     if (!user.id) return;
     try {
       await rejectAdminRequest(user.id);
+      await createNotification({
+        toUserId: user.userId,
+        type: 'admin_request',
+        title: '❌ Admin anmodning afvist',
+        message: 'Din anmodning om admin rolle blev afvist. Kontakt en Super Admin for mere info.',
+      });
       setPendingRequests(prev => prev.filter(r => r.id !== user.id));
-      setUsers(prev => prev.map(u =>
-        u.id === user.id ? { ...u, adminRequest: 'rejected' } : u
-      ));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCreateEvent = async () => {
+    if (!newEvent.date) return;
+    try {
+      await createBattlenight(newEvent);
+      await loadData();
+      setShowNewEventForm(false);
+      setNewEvent({
+        date: '',
+        time: '17:00 - 20:00',
+        maxTeams: 12,
+        maxPlayers: 36,
+        price: 25,
+        zones: 3,
+        maxShifts: 2,
+        status: 'open',
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteEvent = async (id: string) => {
+    if (!confirm('Er du sikker på at du vil slette dette event?')) return;
+    try {
+      await deleteBattlenight(id);
+      setBattlenights(prev => prev.filter(b => b.id !== id));
     } catch (err) {
       console.error(err);
     }
@@ -145,16 +214,6 @@ function SuperAdminPanel() {
     setNewMenuItem({ name: '', price: '', emoji: '🍽️', category: 'Mad' });
   };
 
-  const deleteMenuItem = (id: number) => {
-    setMenuItems(prev => prev.filter(item => item.id !== id));
-  };
-
-  const toggleMenuItem = (id: number) => {
-    setMenuItems(prev => prev.map(item =>
-      item.id === id ? { ...item, available: !item.available } : item
-    ));
-  };
-
   return (
     <div className="page-container">
       <div className="page-header">
@@ -163,40 +222,22 @@ function SuperAdminPanel() {
         <div />
       </div>
 
-      {/* Tabs */}
       <div className="admin-tabs">
-        <button 
-          className={`admin-tab ${activeTab === 'requests' ? 'active' : ''}`} 
-          onClick={() => setActiveTab('requests')}
-        >
-          🛡️ Anmodninger
-          {pendingRequests.length > 0 && (
-            <span className="tab-badge">{pendingRequests.length}</span>
-          )}
+        <button className={`admin-tab ${activeTab === 'requests' ? 'active' : ''}`} onClick={() => setActiveTab('requests')}>
+          🛡️
+          {pendingRequests.length > 0 && <span className="tab-badge">{pendingRequests.length}</span>}
         </button>
-        <button 
-          className={`admin-tab ${activeTab === 'events' ? 'active' : ''}`} 
-          onClick={() => setActiveTab('events')}
-        >
+        <button className={`admin-tab ${activeTab === 'events' ? 'active' : ''}`} onClick={() => setActiveTab('events')}>
           📅 Events
         </button>
-        <button 
-          className={`admin-tab ${activeTab === 'users' ? 'active' : ''}`} 
-          onClick={() => setActiveTab('users')}
-        >
+        <button className={`admin-tab ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
           👥 Brugere
         </button>
-        <button 
-          className={`admin-tab ${activeTab === 'menu' ? 'active' : ''}`} 
-          onClick={() => setActiveTab('menu')}
-        >
+        <button className={`admin-tab ${activeTab === 'menu' ? 'active' : ''}`} onClick={() => setActiveTab('menu')}>
           🍔 Menu
         </button>
-        <button 
-          className={`admin-tab ${activeTab === 'settings' ? 'active' : ''}`} 
-          onClick={() => setActiveTab('settings')}
-        >
-          ⚙️ Indstillinger
+        <button className={`admin-tab ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
+          ⚙️
         </button>
       </div>
 
@@ -206,7 +247,6 @@ function SuperAdminPanel() {
         {activeTab === 'requests' && (
           <div>
             <h2 className="section-title">🛡️ Admin Anmodninger</h2>
-            
             {isLoading ? (
               <p className="loading-text">⏳ Henter anmodninger...</p>
             ) : pendingRequests.length === 0 ? (
@@ -224,22 +264,14 @@ function SuperAdminPanel() {
                         {user.club} · Årgang {user.birthYear} · #{user.playerNumber}
                       </p>
                       <p className="request-date">
-                        📅 Anmodet: {user.adminRequestDate 
-                          ? new Date(user.adminRequestDate).toLocaleDateString('da-DK')
-                          : 'Ukendt dato'}
+                        📅 Anmodet: {formatDate(user.adminRequestDate)}
                       </p>
                     </div>
                     <div className="request-actions">
-                      <button 
-                        className="approve-btn"
-                        onClick={() => handleApproveRequest(user)}
-                      >
+                      <button className="approve-btn" onClick={() => handleApproveRequest(user)}>
                         ✅ Godkend
                       </button>
-                      <button 
-                        className="reject-btn"
-                        onClick={() => handleRejectRequest(user)}
-                      >
+                      <button className="reject-btn" onClick={() => handleRejectRequest(user)}>
                         ❌ Afvis
                       </button>
                     </div>
@@ -255,9 +287,121 @@ function SuperAdminPanel() {
           <div>
             <div className="sa-header-row">
               <h2 className="section-title">📅 Battlenights</h2>
-              <button className="add-btn">+ Opret ny</button>
+              <button className="add-btn" onClick={() => setShowNewEventForm(!showNewEventForm)}>
+                {showNewEventForm ? '✕ Luk' : '+ Opret ny'}
+              </button>
             </div>
-            <p className="help-text">Events kommer når Firebase er fuldt integreret 🔥</p>
+
+            {showNewEventForm && (
+              <div className="new-event-form">
+                <h3 className="card-title">🏒 Opret ny Battlenight</h3>
+
+                <div className="edit-field">
+                  <label>Dato</label>
+                  <input
+                    type="date"
+                    className="sa-input"
+                    value={newEvent.date}
+                    onChange={(e) => setNewEvent(prev => ({ ...prev, date: e.target.value }))}
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>Tidspunkt</label>
+                  <input
+                    type="text"
+                    className="sa-input"
+                    placeholder="fx 17:00 - 20:00"
+                    value={newEvent.time}
+                    onChange={(e) => setNewEvent(prev => ({ ...prev, time: e.target.value }))}
+                  />
+                </div>
+
+                <div className="add-menu-fields">
+                  <div className="edit-field">
+                    <label>Max hold</label>
+                    <input
+                      type="number"
+                      className="sa-input"
+                      value={newEvent.maxTeams}
+                      onChange={(e) => setNewEvent(prev => ({
+                        ...prev,
+                        maxTeams: Number(e.target.value),
+                        maxPlayers: Number(e.target.value) * 3
+                      }))}
+                    />
+                  </div>
+                  <div className="edit-field">
+                    <label>Antal vagter</label>
+                    <input
+                      type="number"
+                      className="sa-input"
+                      value={newEvent.maxShifts}
+                      onChange={(e) => setNewEvent(prev => ({ ...prev, maxShifts: Number(e.target.value) }))}
+                    />
+                  </div>
+                  <div className="edit-field">
+                    <label>Pris pr. spiller</label>
+                    <input
+                      type="number"
+                      className="sa-input"
+                      value={newEvent.price}
+                      onChange={(e) => setNewEvent(prev => ({ ...prev, price: Number(e.target.value) }))}
+                    />
+                  </div>
+                  <div className="edit-field">
+                    <label>Zoner</label>
+                    <input
+                      type="number"
+                      className="sa-input"
+                      value={newEvent.zones}
+                      onChange={(e) => setNewEvent(prev => ({ ...prev, zones: Number(e.target.value) }))}
+                    />
+                  </div>
+                </div>
+
+                <button className="add-btn full-width" onClick={handleCreateEvent}>
+                  🏒 Opret Battlenight
+                </button>
+              </div>
+            )}
+
+            {isLoading ? (
+              <p className="loading-text">⏳ Henter events...</p>
+            ) : battlenights.length === 0 ? (
+              <div className="no-requests">
+                <p>Ingen events oprettet endnu</p>
+              </div>
+            ) : (
+              <div className="events-list">
+                {battlenights.map(event => (
+                  <div key={event.id} className="sa-event-card">
+                    <div className="sa-event-header">
+                      <h3 className="sa-event-date">{event.date}</h3>
+                      <button className="delete-btn" onClick={() => handleDeleteEvent(event.id!)}>🗑️</button>
+                    </div>
+                    <p className="sa-event-time">⏰ {event.time}</p>
+                    <div className="event-details-row">
+                      <span className="event-detail-badge">👥 Max {event.maxTeams} hold</span>
+                      <span className="event-detail-badge">🛡️ {event.maxShifts} vagter</span>
+                      <span className="event-detail-badge">💰 {event.price} kr</span>
+                      <span className="event-detail-badge">🏒 {event.zones} zoner</span>
+                    </div>
+                    <div className="sa-event-status">
+                      <select
+                        className="sa-input"
+                        value={event.status}
+                        onChange={(e) => updateBattlenight(event.id!, { status: e.target.value as Battlenight['status'] })}
+                      >
+                        <option value="open">🟢 Åben</option>
+                        <option value="closed">🔴 Lukket</option>
+                        <option value="completed">✅ Afsluttet</option>
+                      </select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -267,9 +411,9 @@ function SuperAdminPanel() {
             <h2 className="section-title">👥 Alle Brugere</h2>
 
             <div className="mobilepay-info">
-              <h3>📱 MobilePay Info til spillere</h3>
-              <p>Spillere indbetaler til <strong>MobilePay boks #XXXXX</strong> med deres <strong>Bruger ID</strong> som besked.</p>
-              <p>⏰ Der kan gå <strong>1-2 hverdage</strong> inden betalingen registreres i appen.</p>
+              <h3>📱 MobilePay Info</h3>
+              <p>Spillere indbetaler med deres <strong>Bruger ID</strong> som besked.</p>
+              <p>⏰ Der kan gå <strong>1-2 hverdage</strong> inden betalingen registreres.</p>
             </div>
 
             {isLoading ? (
@@ -278,15 +422,15 @@ function SuperAdminPanel() {
               <div className="users-list">
                 {users.map(user => (
                   <div key={user.id} className="sa-user-card">
-                    <div 
-                      className="sa-user-header" 
+                    <div
+                      className="sa-user-header"
                       onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id || null)}
                     >
                       <div>
                         <div className="sa-user-id-row">
                           <span className="sa-user-id">🪪 {user.userId}</span>
                           <span className={`role-badge ${user.role}`}>
-                            {user.role === 'admin' ? '🛡️ Admin' : user.role === 'superadmin' ? '⚙️ Super Admin' : '👤 Spiller'}
+                            {user.role === 'admin' ? '🛡️ Admin' : user.role === 'superadmin' ? '⚙️ Super' : '👤 Spiller'}
                           </span>
                         </div>
                         <p className="sa-user-name">{user.firstName} #{user.playerNumber}</p>
@@ -322,9 +466,9 @@ function SuperAdminPanel() {
                             />
                             <button
                               className="icon-btn"
-                              onClick={() => setShowPassword(prev => ({ 
-                                ...prev, 
-                                [user.id || '']: !prev[user.id || ''] 
+                              onClick={() => setShowPassword(prev => ({
+                                ...prev,
+                                [user.id || '']: !prev[user.id || '']
                               }))}
                             >
                               {showPassword[user.id || ''] ? '🙈' : '👁️'}
@@ -332,7 +476,7 @@ function SuperAdminPanel() {
                           </div>
                         </div>
 
-                        {/* Rediger bruger */}
+                        {/* Rediger */}
                         <div className="sa-section">
                           <div className="sa-section-header">
                             <h4>✏️ Brugerdata</h4>
@@ -407,7 +551,6 @@ function SuperAdminPanel() {
                         {/* Saldo */}
                         <div className="sa-section">
                           <h4>💰 Saldo: <span className={(user.balance || 0) < 0 ? 'negative' : 'positive'}>{user.balance || 0} kr</span></h4>
-
                           <div className="balance-quick-btns">
                             <button className="balance-btn add" onClick={() => addBalance(user, 25)}>+25</button>
                             <button className="balance-btn add" onClick={() => addBalance(user, 50)}>+50</button>
@@ -416,24 +559,19 @@ function SuperAdminPanel() {
                             <button className="balance-btn subtract" onClick={() => subtractBalance(user, 50)}>-50</button>
                             <button className="balance-btn subtract" onClick={() => subtractBalance(user, 100)}>-100</button>
                           </div>
-
                           <div className="custom-amount-row">
                             <input
                               type="number"
                               placeholder="Indtast beløb..."
                               value={customAmount[user.id || ''] || ''}
-                              onChange={(e) => setCustomAmount(prev => ({ 
-                                ...prev, 
-                                [user.id || '']: e.target.value 
+                              onChange={(e) => setCustomAmount(prev => ({
+                                ...prev,
+                                [user.id || '']: e.target.value
                               }))}
                               className="sa-input"
                             />
                             <button className="balance-btn add" onClick={() => applyCustomAmount(user, 'add')}>+ Tilføj</button>
                             <button className="balance-btn subtract" onClick={() => applyCustomAmount(user, 'subtract')}>- Træk</button>
-                          </div>
-
-                          <div className="balance-history">
-                            <p className="history-title">📋 Bevægelser kommer med Firebase integration</p>
                           </div>
                         </div>
 
@@ -450,7 +588,6 @@ function SuperAdminPanel() {
         {activeTab === 'menu' && (
           <div>
             <h2 className="section-title">🍔 Mad & Drikke Menu</h2>
-
             <div className="add-menu-card">
               <h3 className="card-title">➕ Tilføj ny vare</h3>
               <div className="add-menu-fields">
@@ -499,7 +636,6 @@ function SuperAdminPanel() {
               </div>
               <button className="add-btn full-width" onClick={addMenuItem}>➕ Tilføj vare</button>
             </div>
-
             <div className="menu-items-list">
               {menuItems.map(item => (
                 <div key={item.id} className={`menu-item-admin ${!item.available ? 'unavailable' : ''}`}>
@@ -511,11 +647,16 @@ function SuperAdminPanel() {
                   <div className="item-admin-actions">
                     <button
                       className="toggle-available-btn"
-                      onClick={() => toggleMenuItem(item.id)}
+                      onClick={() => setMenuItems(prev => prev.map(i =>
+                        i.id === item.id ? { ...i, available: !i.available } : i
+                      ))}
                     >
                       {item.available ? '✅' : '❌'}
                     </button>
-                    <button className="delete-item-btn" onClick={() => deleteMenuItem(item.id)}>
+                    <button
+                      className="delete-item-btn"
+                      onClick={() => setMenuItems(prev => prev.filter(i => i.id !== item.id))}
+                    >
                       🗑️
                     </button>
                   </div>
@@ -529,9 +670,8 @@ function SuperAdminPanel() {
         {activeTab === 'settings' && (
           <div>
             <h2 className="section-title">⚙️ App Indstillinger</h2>
-
             <div className="settings-card">
-              <h3 className="settings-title">💰 Pris pr. spiller</h3>
+              <h3 className="settings-title">💰 Standard pris pr. spiller</h3>
               <div className="settings-row">
                 <input
                   type="number"
@@ -542,7 +682,6 @@ function SuperAdminPanel() {
                 <span className="settings-unit">kr</span>
               </div>
             </div>
-
             <div className="settings-card">
               <h3 className="settings-title">🔔 Push Notifikationer</h3>
               <div className="settings-field">
@@ -564,7 +703,6 @@ function SuperAdminPanel() {
                 />
               </div>
             </div>
-
             <div className="settings-card">
               <h3 className="settings-title">🏆 Rangliste</h3>
               <div className="settings-toggle-row">
@@ -579,7 +717,6 @@ function SuperAdminPanel() {
                 </label>
               </div>
             </div>
-
             <button className="save-settings-btn">💾 Gem alle indstillinger</button>
           </div>
         )}
