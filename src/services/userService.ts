@@ -27,7 +27,7 @@ export type User = {
     snap: string;
     email: string;
   };
-  createdAt: Date;
+  createdAt: Date | Timestamp;
 };
 
 export const generateUserId = (firstName: string, playerNumber: number): string => {
