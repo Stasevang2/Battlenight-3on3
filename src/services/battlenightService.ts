@@ -123,6 +123,13 @@ export const getTeamsByLeader = async (leaderId: string): Promise<Team[]> => {
   return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Team));
 };
 
+export const getTeamsByPlayer = async (userId: string): Promise<Team[]> => {
+  const snapshot = await getDocs(collection(db, 'teams'));
+  return snapshot.docs
+    .map(d => ({ id: d.id, ...d.data() } as Team))
+    .filter((team: Team) => team.players.some((p: TeamPlayer) => p.userId === userId));
+};
+
 export const createTeam = async (data: Omit<Team, 'id' | 'createdAt'>) => {
   const docRef = await addDoc(collection(db, 'teams'), {
     ...data,
@@ -183,13 +190,13 @@ export const respondToInvite = async (
     status: accept ? 'accepted' : 'rejected',
   });
 
-  const teamSnapshot = await getDocs(
+  const teamsSnapshot = await getDocs(
     query(collection(db, 'teams'), where('__name__', '==', teamId))
   );
 
-  if (!teamSnapshot.empty) {
-    const team = teamSnapshot.docs[0].data() as Team;
-    const updatedPlayers = team.players.map(p =>
+  if (!teamsSnapshot.empty) {
+    const team = teamsSnapshot.docs[0].data() as Team;
+    const updatedPlayers = team.players.map((p: TeamPlayer) =>
       p.userId === userId
         ? { ...p, status: accept ? 'accepted' as const : 'rejected' as const }
         : p

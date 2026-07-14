@@ -12,7 +12,7 @@ import {
   getInvitesForUser,
   respondToInvite,
 } from '../services/battlenightService';
-import type { Battlenight, Team, TeamInvite } from '../services/battlenightService';
+import type { Battlenight, Team, TeamInvite, TeamPlayer } from '../services/battlenightService';
 import { getAllUsers } from '../services/userService';
 import type { User } from '../services/userService';
 import { createNotification } from '../services/notificationService';
@@ -55,18 +55,17 @@ function MyTeam() {
         getAllUsers(),
       ]);
 
-      // Kombiner hold hvor man er holdleder eller spiller
       const allMyTeams = [...leaderTeams];
-      playerTeams.forEach(t => {
+      playerTeams.forEach((t: Team) => {
         if (!allMyTeams.find(lt => lt.id === t.id)) {
           allMyTeams.push(t);
         }
       });
 
-      setBattlenights(events.filter(e => e.status === 'open'));
+      setBattlenights(events.filter((e: Battlenight) => e.status === 'open'));
       setMyTeams(allMyTeams);
       setMyInvites(invites);
-      setAllUsers(users.filter(u => u.userId !== currentUser.userId));
+      setAllUsers(users.filter((u: User) => u.userId !== currentUser.userId));
     } catch (err) {
       console.error(err);
     }
@@ -92,7 +91,7 @@ function MyTeam() {
           birthYear: currentUser.birthYear,
           status: 'accepted',
         },
-        ...selectedPlayers.map(userId => {
+        ...selectedPlayers.map((userId: string) => {
           const user = allUsers.find(u => u.userId === userId);
           if (user) {
             return {
@@ -124,7 +123,6 @@ function MyTeam() {
     try {
       const teamId = await createTeam(team);
 
-      // Send invites til valgte spillere
       for (const userId of selectedPlayers) {
         const user = allUsers.find(u => u.userId === userId);
         if (user) {
@@ -187,20 +185,16 @@ function MyTeam() {
     const isLeader = team.leaderId === currentUser.userId;
 
     if (isLeader) {
-      // Holdleder afmelder sig selv - fjerner fra hold
-      const updatedPlayers = team.players.filter(p => p.userId !== currentUser.userId);
+      const updatedPlayers = team.players.filter((p: TeamPlayer) => p.userId !== currentUser.userId);
       if (updatedPlayers.length === 0) {
-        // Slet holdet hvis ingen spillere tilbage
         await updateTeam(team.id!, { players: updatedPlayers });
       } else {
-        // Giv holdleder rolle til næste spiller
-        const newLeader = updatedPlayers.find(p => p.status === 'accepted') || updatedPlayers[0];
+        const newLeader = updatedPlayers.find((p: TeamPlayer) => p.status === 'accepted') || updatedPlayers[0];
         await updateTeam(team.id!, {
           players: updatedPlayers,
           leaderId: newLeader.userId,
           leaderName: newLeader.firstName,
         });
-        // Notificer ny holdleder
         await createNotification({
           toUserId: newLeader.userId,
           type: 'general',
@@ -209,11 +203,9 @@ function MyTeam() {
         });
       }
     } else {
-      // Fjern spiller fra hold
-      const updatedPlayers = team.players.filter(p => p.userId !== currentUser.userId);
+      const updatedPlayers = team.players.filter((p: TeamPlayer) => p.userId !== currentUser.userId);
       await updateTeam(team.id!, { players: updatedPlayers });
 
-      // Notificer holdleder
       await createNotification({
         toUserId: team.leaderId,
         type: 'general',
@@ -276,7 +268,7 @@ function MyTeam() {
     setTimeout(() => setCopiedText(false), 2000);
   };
 
-  const filteredUsers = allUsers.filter(u =>
+  const filteredUsers = allUsers.filter((u: User) =>
     u.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     u.userId.toLowerCase().includes(searchQuery.toLowerCase()) ||
     u.club.toLowerCase().includes(searchQuery.toLowerCase())
@@ -306,14 +298,12 @@ function MyTeam() {
         <div />
       </div>
 
-      {/* Bekræftelse banner */}
       {showConfirmation && (
         <div className="confirmation-banner" onClick={() => setShowConfirmation(false)}>
           {confirmationText}
         </div>
       )}
 
-      {/* Kopieret banner */}
       {copiedText && (
         <div className="copied-banner">
           📋 Tekst kopieret!
@@ -358,7 +348,6 @@ function MyTeam() {
               </div>
             )}
 
-            {/* Loading */}
             {isLoading ? (
               <p className="loading-text">⏳ Henter hold...</p>
             ) : (
@@ -400,11 +389,9 @@ function MyTeam() {
                     {myTeams.map(team => {
                       const isLeader = team.leaderId === currentUser.userId;
                       const battlenight = battlenights.find(b => b.id === team.battlenightId);
-                      const myPlayer = team.players.find(p => p.userId === currentUser.userId);
 
                       return (
                         <div key={team.id} className="team-card">
-                          {/* Hold header */}
                           <div className="team-header">
                             <div>
                               <h2 className="team-name">🏒 {team.teamName}</h2>
@@ -436,7 +423,7 @@ function MyTeam() {
                           <div className="players-section">
                             <h3 className="players-title">👥 Spillere ({team.players.length})</h3>
                             <div className="players-list">
-                              {team.players.map((player, index) => (
+                              {team.players.map((player: TeamPlayer, index: number) => (
                                 <div key={index} className="player-card">
                                   <div className="player-avatar">
                                     #{player.playerNumber || '?'}
@@ -466,7 +453,6 @@ function MyTeam() {
                             <div className="invite-players-section">
                               <h3 className="players-title">➕ Inviter spiller</h3>
 
-                              {/* Søg efter spiller i appen */}
                               <div className="invite-search">
                                 <input
                                   type="text"
@@ -477,8 +463,8 @@ function MyTeam() {
                                 />
                                 {searchQuery && (
                                   <div className="search-results-dropdown">
-                                    {filteredUsers.slice(0, 5).map(user => {
-                                      const alreadyInTeam = team.players.some(p => p.userId === user.userId);
+                                    {filteredUsers.slice(0, 5).map((user: User) => {
+                                      const alreadyInTeam = team.players.some((p: TeamPlayer) => p.userId === user.userId);
                                       return (
                                         <div key={user.id} className="search-result-item">
                                           <div className="search-result-info">
@@ -505,7 +491,6 @@ function MyTeam() {
                                 )}
                               </div>
 
-                              {/* Copy/paste invite tekster */}
                               <div className="invite-copy-options">
                                 <button
                                   className="invite-copy-btn"
@@ -514,7 +499,6 @@ function MyTeam() {
                                   📲 Inviter via SMS/Snap
                                   {showInviteText === `team-${team.id}` ? ' ▲' : ' ▼'}
                                 </button>
-
                                 <button
                                   className="invite-copy-btn opponent"
                                   onClick={() => setShowInviteText(showInviteText === `opp-${team.id}` ? null : `opp-${team.id}`)}
@@ -637,7 +621,6 @@ function MyTeam() {
               <h3 className="chosen-event-date">{selectedBattlenight.date}</h3>
             </div>
 
-            {/* Holdnavn */}
             <div className="form-section">
               <label className="form-label">🏒 Holdnavn <span className="optional">(valgfrit)</span></label>
               <input
@@ -650,7 +633,6 @@ function MyTeam() {
               <p className="form-hint">💡 Hvis du ikke vælger et navn bruges "Team {currentUser.firstName}"</p>
             </div>
 
-            {/* Udstyr */}
             <div className="form-section">
               <label className="form-label">⚙️ Udstyrsniveau</label>
               <p className="form-hint">⚠️ Alle spillere på holdet SKAL have samme udstyrsniveau</p>
@@ -672,12 +654,10 @@ function MyTeam() {
               </div>
             </div>
 
-            {/* Inviter spillere */}
             <div className="form-section">
               <label className="form-label">👥 Inviter medspillere <span className="optional">(valgfrit)</span></label>
               <p className="form-hint">💡 Du kan tilmelde dig alene og invitere spillere bagefter</p>
 
-              {/* Søg i appen */}
               <input
                 type="text"
                 className="form-input"
@@ -688,7 +668,7 @@ function MyTeam() {
 
               {searchQuery && (
                 <div className="search-results-list">
-                  {filteredUsers.slice(0, 5).map(user => (
+                  {filteredUsers.slice(0, 5).map((user: User) => (
                     <div key={user.id} className="search-result-item">
                       <div className="search-result-info">
                         <span className="search-result-name">{user.firstName}</span>
@@ -720,10 +700,9 @@ function MyTeam() {
                 </div>
               )}
 
-              {/* Valgte spillere */}
               {selectedPlayers.length > 0 && (
                 <div className="selected-players-list">
-                  {selectedPlayers.map(userId => {
+                  {selectedPlayers.map((userId: string) => {
                     const user = allUsers.find(u => u.userId === userId);
                     return (
                       <div key={userId} className="selected-player-item">
@@ -737,7 +716,6 @@ function MyTeam() {
                 </div>
               )}
 
-              {/* Copy/paste invite til nye spillere */}
               <div className="invite-new-section">
                 <p className="form-hint">📲 Har du en ven der ikke er i appen endnu?</p>
                 <button
@@ -775,7 +753,6 @@ function MyTeam() {
               </div>
             </div>
 
-            {/* Opret knap */}
             <div className="create-actions">
               <button
                 className="action-btn primary"
