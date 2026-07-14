@@ -1,132 +1,280 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { useAuth } from '../context/AuthContext';
+import {
+  subscribeToConversations,
+  subscribeToMessages,
+  sendMessage,
+  createConversation,
+  markConversationAsRead,
+  getTotalUnreadCount,
+} from '../services/messageService';
+import type { Conversation, Message } from '../services/messageService';
+import { getAllUsers } from '../services/userService';
+import type { User } from '../services/userService';
 import '../styles/messages.css';
-
-const mockConversations = {
-  team: [
-    { id: 1, name: 'Ice Kings 🏒', lastMessage: 'Magnus: Er vi klar til lørdag?', time: '14:32', unread: 2, event: '18. Jan 2025' },
-    { id: 2, name: 'Rungsted Rockets', lastMessage: 'Oliver: God kamp!', time: 'I går', unread: 0, event: '11. Jan 2025' },
-  ],
-  direct: [
-    { id: 3, name: 'Magnus', lastMessage: 'Hej! Hvornår mødes vi?', time: '12:15', unread: 1, userId: 'MAGN9' },
-    { id: 4, name: 'Oliver', lastMessage: 'Fedt vi vandt!', time: 'I går', unread: 0, userId: 'OLIV23' },
-  ],
-  admin: [
-    { id: 5, name: '📢 Admin - 18. Jan', lastMessage: 'Husk Battlenight lørdag kl. 17:00!', time: '10:00', unread: 1, event: '18. Jan 2025' },
-    { id: 6, name: '📢 Admin - 11. Jan', lastMessage: 'Tak for god kamp!', time: '21:00', unread: 0, event: '11. Jan 2025' },
-  ],
-  challenges: [
-    { id: 7, name: '⚔️ Udfordring - Rungsted Rockets', lastMessage: 'Vi udfordrer jer til officiel kamp!', time: '09:00', unread: 1, status: 'pending' },
-  ],
-};
-
-const mockMessages = [
-  { id: 1, from: 'Magnus', text: 'Er vi klar til lørdag?', time: '14:30', isMe: false },
-  { id: 2, from: 'Mig', text: 'Ja! Glæder mig!', time: '14:31', isMe: true },
-  { id: 3, from: 'Magnus', text: 'Husk fuldt udstyr', time: '14:32', isMe: false },
-  { id: 4, from: 'Oliver', text: 'Vi er klar! 🏒', time: '14:33', isMe: false },
-];
 
 type Category = 'team' | 'direct' | 'admin' | 'challenges';
 
 function Messages() {
   const navigate = useNavigate();
-  const [activeCategory, setActiveCategory] = useState<Category>('team');
-  const [activeConversation, setActiveConversation] = useState<number | null>(null);
+  const { currentUser } = useAuth();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [activeCategory, setActiveCategory] = useState<Category>('direct');
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const unsubscribeMessagesRef = useRef<(() => void) | null>(null);
 
-  const allConversations = mockConversations[activeCategory];
-  const activeChat = Object.values(mockConversations).flat().find(c => c.id === activeConversation);
+  useEffect(() => {
+    if (!currentUser) return;
 
-  const totalUnread = {
-    team: mockConversations.team.reduce((sum, c) => sum + c.unread, 0),
-    direct: mockConversations.direct.reduce((sum, c) => sum + c.unread, 0),
-    admin: mockConversations.admin.reduce((sum, c) => sum + c.unread, 0),
-    challenges: mockConversations.challenges.reduce((sum, c) => sum + c.unread, 0),
+    const unsubscribe = subscribeToConversations(currentUser.userId, (convs) => {
+      setConversations(convs);
+      setIsLoading(false);
+    });
+
+    getAllUsers().then(users => {
+      setAllUsers(users.filter(u => u.userId !== currentUser.userId));
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (!activeConversation?.id || !currentUser) return;
+
+    if (unsubscribeMessagesRef.current) {
+      unsubscribeMessagesRef.current();
+    }
+
+    const unsubscribe = subscribeToMessages(activeConversation.id, (msgs) => {
+      setMessages(msgs);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    });
+
+    unsubscribeMessagesRef.current = unsubscribe;
+    markConversationAsRead(activeConversation.id, currentUser.userId);
+
+    return () => unsubscribe();
+  }, [activeConversation]);
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !activeConversation?.id || !currentUser) return;
+
+    await sendMessage(
+      activeConversation.id,
+      currentUser.userId,
+      currentUser.firstName,
+      newMessage,
+      activeConversation.participants
+    );
+    setNewMessage('');
   };
+
+  const handleStartDirectChat = async (user: User) => {
+    if (!currentUser) return;
+
+    const existingConv = conversations.find(c =>
+      c.type === 'direct' &&
+      c.participants.includes(user.userId) &&
+      c.participants.includes(currentUser.userId)
+    );
+
+    if (existingConv) {
+      setActiveConversation(existingConv);
+      setShowNewChat(false);
+      return;
+    }
+
+    const convId = await createConversation({
+      type: 'direct',
+      participants: [currentUser.userId, user.userId],
+      participantNames: [currentUser.firstName, user.firstName],
+      lastMessage: '',
+      unreadCount: {},
+    });
+
+    setActiveConversation({
+      id: convId,
+      type: 'direct',
+      participants: [currentUser.userId, user.userId],
+      participantNames: [currentUser.firstName, user.firstName],
+    } as Conversation);
+
+    setShowNewChat(false);
+  };
+
+  const filteredConversations = conversations.filter(conv => {
+    if (activeCategory === 'direct') return conv.type === 'direct';
+    if (activeCategory === 'team') return conv.type === 'team';
+    if (activeCategory === 'admin') return conv.type === 'admin';
+    if (activeCategory === 'challenges') return conv.type === 'challenge';
+    return false;
+  });
+
+  const categoryUnread = (type: string) => {
+    return conversations
+      .filter(c => c.type === type)
+      .reduce((sum, c) => sum + (c.unreadCount?.[currentUser?.userId || ''] || 0), 0);
+  };
+
+  const getConvName = (conv: Conversation) => {
+    if (conv.type === 'direct') {
+      const otherName = conv.participantNames?.find(n => n !== currentUser?.firstName);
+      return otherName || 'Direkte besked';
+    }
+    return conv.teamName || conv.type;
+  };
+
+  const filteredUsers = allUsers.filter(u =>
+    u.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.userId.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (!currentUser) {
+    navigate('/');
+    return null;
+  }
 
   return (
     <div className="page-container">
       <div className="page-header">
         {activeConversation ? (
-          <button className="back-btn" onClick={() => setActiveConversation(null)}>← Tilbage</button>
+          <button className="back-btn" onClick={() => {
+            setActiveConversation(null);
+            setMessages([]);
+          }}>← Tilbage</button>
         ) : (
           <button className="back-btn" onClick={() => navigate('/dashboard')}>← Tilbage</button>
         )}
         <h1 className="page-title">
-          {activeChat ? activeChat.name.toUpperCase().substring(0, 15) : 'BESKEDER'}
+          {activeConversation ? getConvName(activeConversation).toUpperCase().substring(0, 15) : 'BESKEDER'}
         </h1>
-        <div />
+        {!activeConversation && (
+          <button className="new-chat-btn" onClick={() => setShowNewChat(!showNewChat)}>✏️</button>
+        )}
       </div>
 
       {!activeConversation ? (
         <>
+          {/* Ny chat søgning */}
+          {showNewChat && (
+            <div className="new-chat-panel">
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Søg efter spiller..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                autoFocus
+              />
+              <div className="user-search-results">
+                {filteredUsers.slice(0, 8).map(user => (
+                  <button
+                    key={user.id}
+                    className="user-search-item"
+                    onClick={() => handleStartDirectChat(user)}
+                  >
+                    <span className="user-search-name">{user.firstName}</span>
+                    <span className="user-search-details">{user.club} · {user.userId}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Kategori tabs */}
           <div className="message-categories">
             {([
-              { key: 'team', label: '👥 Hold', count: totalUnread.team },
-              { key: 'direct', label: '👤 Spiller', count: totalUnread.direct },
-              { key: 'admin', label: '📢 Admin', count: totalUnread.admin },
-              { key: 'challenges', label: '⚔️ Udfordringer', count: totalUnread.challenges },
-            ] as { key: Category; label: string; count: number }[]).map(cat => (
+              { key: 'direct', label: '👤 Spiller', type: 'direct' },
+              { key: 'team', label: '👥 Hold', type: 'team' },
+              { key: 'admin', label: '📢 Admin', type: 'admin' },
+              { key: 'challenges', label: '⚔️ Udfordringer', type: 'challenge' },
+            ] as { key: Category; label: string; type: string }[]).map(cat => (
               <button
                 key={cat.key}
                 className={`category-tab ${activeCategory === cat.key ? 'active' : ''}`}
                 onClick={() => setActiveCategory(cat.key)}
               >
                 {cat.label}
-                {cat.count > 0 && <span className="tab-badge">{cat.count}</span>}
+                {categoryUnread(cat.type) > 0 && (
+                  <span className="tab-badge">{categoryUnread(cat.type)}</span>
+                )}
               </button>
             ))}
           </div>
 
           <div className="content">
-            <div className="conversations-list">
-              {allConversations.map((conv) => (
-                <button
-                  key={conv.id}
-                  className="conversation-card"
-                  onClick={() => setActiveConversation(conv.id)}
-                >
-                  <div className="conv-avatar">
-                    {activeCategory === 'team' ? '👥' :
-                      activeCategory === 'admin' ? '📢' :
-                        activeCategory === 'challenges' ? '⚔️' : '👤'}
-                  </div>
-                  <div className="conv-info">
-                    <div className="conv-header">
-                      <span className="conv-name">{conv.name}</span>
-                      <span className="conv-time">{conv.time}</span>
-                    </div>
-                    <p className="conv-last-message">{conv.lastMessage}</p>
-                    {'event' in conv && conv.event && (
-                      <span className="conv-event-tag">🏒 {conv.event}</span>
-                    )}
-                    {'status' in conv && conv.status === 'pending' && (
-                      <span className="challenge-pending-tag">⏳ Afventer svar</span>
-                    )}
-                  </div>
-                  {conv.unread > 0 && (
-                    <span className="unread-badge">{conv.unread}</span>
-                  )}
-                </button>
-              ))}
-            </div>
+            {isLoading ? (
+              <p className="loading-text">⏳ Henter beskeder...</p>
+            ) : filteredConversations.length === 0 ? (
+              <div className="no-messages">
+                <p>Ingen beskeder endnu</p>
+                <p>Tryk ✏️ øverst for at starte en ny samtale</p>
+              </div>
+            ) : (
+              <div className="conversations-list">
+                {filteredConversations.map((conv) => {
+                  const unread = conv.unreadCount?.[currentUser.userId] || 0;
+                  return (
+                    <button
+                      key={conv.id}
+                      className="conversation-card"
+                      onClick={() => setActiveConversation(conv)}
+                    >
+                      <div className="conv-avatar">
+                        {conv.type === 'team' ? '👥' :
+                          conv.type === 'admin' ? '📢' :
+                            conv.type === 'challenge' ? '⚔️' : '👤'}
+                      </div>
+                      <div className="conv-info">
+                        <div className="conv-header">
+                          <span className="conv-name">{getConvName(conv)}</span>
+                          <span className="conv-time">
+                            {conv.lastMessageTime
+                              ? (conv.lastMessageTime as any)?.toDate?.()?.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })
+                              : ''}
+                          </span>
+                        </div>
+                        <p className="conv-last-message">{conv.lastMessage || 'Ingen beskeder endnu'}</p>
+                        {conv.battlenightDate && (
+                          <span className="conv-event-tag">🏒 {conv.battlenightDate}</span>
+                        )}
+                      </div>
+                      {unread > 0 && (
+                        <span className="unread-badge">{unread}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </>
       ) : (
         <div className="chat-container">
           <div className="messages-list">
-            {mockMessages.map((msg) => (
-              <div key={msg.id} className={`message ${msg.isMe ? 'mine' : 'theirs'}`}>
-                {!msg.isMe && <span className="message-from">{msg.from}</span>}
+            {messages.map((msg) => (
+              <div key={msg.id} className={`message ${msg.fromUserId === currentUser.userId ? 'mine' : 'theirs'}`}>
+                {msg.fromUserId !== currentUser.userId && (
+                  <span className="message-from">{msg.fromUserName}</span>
+                )}
                 <div className="message-bubble">
                   <p>{msg.text}</p>
-                  <span className="message-time">{msg.time}</span>
+                  <span className="message-time">
+                    {(msg.createdAt as any)?.toDate?.()?.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' }) || ''}
+                  </span>
                 </div>
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
           <div className="message-input-container">
             <input
@@ -135,8 +283,9 @@ function Messages() {
               placeholder="Skriv en besked..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
             />
-            <button className="send-btn">➤</button>
+            <button className="send-btn" onClick={handleSendMessage}>➤</button>
           </div>
         </div>
       )}

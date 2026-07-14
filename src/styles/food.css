@@ -1,7 +1,31 @@
 .food-subtitle {
   font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 15px;
+}
+
+.event-selector-food {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 20px;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.food-select {
+  flex: 1;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(200, 169, 81, 0.3);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.food-select option {
+  background: #0a1628;
 }
 
 .food-section {
@@ -41,6 +65,11 @@
   font-size: 0.95rem;
   font-weight: 600;
   color: #ffffff;
+}
+
+.item-description {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .item-price {
@@ -135,4 +164,29 @@
   font-size: 1rem;
   font-weight: 800;
   cursor: pointer;
+}
+
+.order-confirmation {
+  background: rgba(0, 200, 100, 0.15);
+  border: 1px solid #00c864;
+  color: #00c864;
+  padding: 12px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.loading-text {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 30px;
+}
+
+.section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 15px;
 }

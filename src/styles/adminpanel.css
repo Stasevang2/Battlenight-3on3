@@ -1,8 +1,29 @@
+.event-selector {
+  padding: 10px 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.event-select {
+  width: 100%;
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(200, 169, 81, 0.3);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.event-select option {
+  background: #0a1628;
+}
+
 .admin-tabs {
   display: flex;
   background: rgba(0, 0, 0, 0.2);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 0 20px;
+  padding: 0 10px;
 }
 
 .admin-tab {
@@ -12,10 +33,11 @@
   border: none;
   border-bottom: 3px solid transparent;
   color: rgba(255, 255, 255, 0.5);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  white-space: nowrap;
 }
 
 .admin-tab.active {
@@ -90,14 +112,14 @@
 }
 
 .admin-team-card.individual {
-  border-color: rgba(200, 169, 81, 0.15);
+  border-color: rgba(100, 100, 255, 0.2);
 }
 
 .admin-team-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .admin-team-name {
@@ -140,6 +162,28 @@
   background: rgba(100, 100, 255, 0.15);
   color: rgba(150, 150, 255, 0.9);
   border: 1px solid rgba(100, 100, 255, 0.3);
+}
+
+.team-players-status {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+}
+
+.player-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.player-status-badge {
+  font-size: 0.9rem;
 }
 
 .admin-team-actions {
@@ -200,7 +244,6 @@
   color: #ff6464;
 }
 
-/* Presence status */
 .presence-status {
   padding: 8px 12px;
   border-radius: 8px;
@@ -221,7 +264,81 @@
   color: #ff6464;
 }
 
-/* Messages */
+/* Resultater */
+.results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(200, 169, 81, 0.2);
+  border-radius: 12px;
+  padding: 15px;
+}
+
+.result-teams {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.result-team-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ffffff;
+  flex: 1;
+  text-align: center;
+}
+
+.vs-text {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 0 10px;
+}
+
+.result-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.result-btn {
+  flex: 1;
+  padding: 8px 4px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.result-btn.win {
+  background: rgba(0, 200, 100, 0.15);
+  color: #00c864;
+  border: 1px solid #00c864;
+}
+
+.result-btn.draw {
+  background: rgba(200, 169, 81, 0.15);
+  color: #c8a951;
+  border: 1px solid #c8a951;
+}
+
+.result-registered {
+  text-align: center;
+  padding: 8px;
+  background: rgba(0, 200, 100, 0.1);
+  border: 1px solid rgba(0, 200, 100, 0.3);
+  border-radius: 8px;
+  color: #00c864;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Beskeder */
 .message-sent-banner {
   background: rgba(0, 200, 100, 0.15);
   border: 1px solid #00c864;
@@ -301,6 +418,13 @@
   cursor: not-allowed;
 }
 
+.no-events-admin {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 1.8;
+}
+
 .help-text {
   font-size: 0.82rem;
   color: rgba(255, 255, 255, 0.5);
@@ -315,4 +439,10 @@
   letter-spacing: 1px;
   text-transform: uppercase;
   margin-bottom: 15px;
+}
+
+.loading-text {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 30px;
 }

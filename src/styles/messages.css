@@ -1,4 +1,70 @@
-/* Category tabs */
+.new-chat-btn {
+  background: transparent;
+  border: none;
+  color: #c8a951;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.new-chat-panel {
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 15px 20px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 25px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  outline: none;
+  margin-bottom: 10px;
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.user-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.user-search-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.user-search-item:hover {
+  background: rgba(200, 169, 81, 0.1);
+  border-color: rgba(200, 169, 81, 0.3);
+}
+
+.user-search-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.user-search-details {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
 .message-categories {
   display: flex;
   background: rgba(0, 0, 0, 0.2);
@@ -24,7 +90,6 @@
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -37,8 +102,8 @@
 }
 
 .tab-badge {
-  background: #c8a951;
-  color: #0a1628;
+  background: #CC0000;
+  color: white;
   border-radius: 50%;
   width: 18px;
   height: 18px;
@@ -49,7 +114,6 @@
   font-weight: 700;
 }
 
-/* Conversations */
 .conversations-list {
   display: flex;
   flex-direction: column;
@@ -121,14 +185,6 @@
   border-radius: 10px;
 }
 
-.challenge-pending-tag {
-  font-size: 0.72rem;
-  color: rgba(255, 150, 0, 0.8);
-  background: rgba(255, 150, 0, 0.1);
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
 .unread-badge {
   background: #c8a951;
   color: #0a1628;
@@ -143,7 +199,13 @@
   min-width: 22px;
 }
 
-/* Chat */
+.no-messages {
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 1.8;
+}
+
 .chat-container {
   display: flex;
   flex-direction: column;
