@@ -1,200 +1,410 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import BottomNav from '../components/BottomNav';
-import { useAuth } from '../context/AuthContext';
-import { getAllResults, buildLeaderboard } from '../services/resultService';
-import { getAllUsers } from '../services/userService';
-import type { LeaderboardEntry } from '../services/resultService';
-import '../styles/leaderboard.css';
-
-function Leaderboard() {
-  const navigate = useNavigate();
-  const { currentUser } = useAuth();
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [showAllYears, setShowAllYears] = useState(false);
-  const [showChallengeModal, setShowChallengeModal] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [myRank, setMyRank] = useState(0);
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      const results = await getAllResults();
-      const board = buildLeaderboard(results, []);
-      setLeaderboard(board);
-
-      if (currentUser) {
-        const myEntry = board.findIndex(e => e.leaderId === currentUser.userId);
-        setMyRank(myEntry + 1);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-    setIsLoading(false);
-  };
-
-  const currentUserBirthYear = currentUser?.birthYear || 2012;
-
-  const filteredLeaderboard = showAllYears
-    ? leaderboard
-    : leaderboard.filter(team =>
-        Math.abs(team.birthYear - currentUserBirthYear) <= 1
-      );
-
-  const handleChallenge = (teamName: string) => {
-    setSelectedTeam(teamName);
-    setShowChallengeModal(true);
-  };
-
-  return (
-    <div className="page-container">
-      <div className="page-header">
-        <button className="back-btn" onClick={() => navigate('/dashboard')}>← Tilbage</button>
-        <h1 className="page-title">RANGLISTE</h1>
-        <div />
-      </div>
-
-      <div className="content">
-
-        {/* Årgangs toggle */}
-        <div className="year-toggle-row">
-          <div className="year-info">
-            <p className="year-label">
-              {showAllYears ? '🌍 Alle årgange' : `📅 Årgange ${currentUserBirthYear - 1}-${currentUserBirthYear + 1}`}
-            </p>
-            <p className="year-sublabel">
-              {showAllYears ? 'Viser hele ranglisten' : 'Viser din årgang ± 1 år'}
-            </p>
-          </div>
-          <label className="toggle-switch">
-            <input
-              type="checkbox"
-              checked={showAllYears}
-              onChange={(e) => setShowAllYears(e.target.checked)}
-            />
-            <span className="toggle-slider" />
-          </label>
-        </div>
-
-        {isLoading ? (
-          <p className="loading-text">⏳ Henter rangliste...</p>
-        ) : filteredLeaderboard.length === 0 ? (
-          <div className="no-results">
-            <p>🏆 Ingen officielle kampe endnu</p>
-            <p>Udfordr et hold for at komme på ranglisten!</p>
-          </div>
-        ) : (
-          <>
-            {/* Top 3 Podium */}
-            {filteredLeaderboard.length >= 3 && (
-              <div className="podium">
-                <div className="podium-item second">
-                  <span className="podium-crown">🥈</span>
-                  <div className="podium-block second-block">
-                    <span className="podium-rank">2</span>
-                  </div>
-                  <span className="podium-name">{filteredLeaderboard[1]?.teamName}</span>
-                  <span className="podium-points">{filteredLeaderboard[1]?.points} pt</span>
-                </div>
-                <div className="podium-item first">
-                  <span className="podium-crown">🏆</span>
-                  <div className="podium-block first-block">
-                    <span className="podium-rank">1</span>
-                  </div>
-                  <span className="podium-name">{filteredLeaderboard[0]?.teamName}</span>
-                  <span className="podium-points">{filteredLeaderboard[0]?.points} pt</span>
-                </div>
-                <div className="podium-item third">
-                  <span className="podium-crown">🥉</span>
-                  <div className="podium-block third-block">
-                    <span className="podium-rank">3</span>
-                  </div>
-                  <span className="podium-name">{filteredLeaderboard[2]?.teamName}</span>
-                  <span className="podium-points">{filteredLeaderboard[2]?.points} pt</span>
-                </div>
-              </div>
-            )}
-
-            {/* Rangliste */}
-            <h2 className="section-title">📊 Rangliste</h2>
-            <div className="leaderboard-list">
-              {filteredLeaderboard.map((team, index) => {
-                const rank = index + 1;
-                const isMyTeam = team.leaderId === currentUser?.userId;
-                const canChallenge = Math.abs(rank - myRank) <= 3 && !isMyTeam && myRank > 0;
-
-                return (
-                  <div key={team.teamName} className={`leaderboard-row ${isMyTeam ? 'my-team' : ''}`}>
-                    <span className="rank-number">
-                      {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`}
-                    </span>
-                    <div className="team-info">
-                      <div className="team-name-row">
-                        <span className="team-name-text">{team.teamName}</span>
-                        {isMyTeam && <span className="my-team-tag">Dit hold</span>}
-                        <span className="birth-year-tag">{team.birthYear}</span>
-                      </div>
-                      <span className="team-record">
-                        {team.wins}V - {team.draws}U - {team.losses}T · {team.attended} deltagelser
-                      </span>
-                    </div>
-                    <div className="team-right">
-                      <span className="team-points">{team.points} pt</span>
-                      {canChallenge && (
-                        <button
-                          className="mini-challenge-btn"
-                          onClick={() => handleChallenge(team.teamName)}
-                        >
-                          ⚔️
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-
-        {/* Challenge regler */}
-        <div className="challenge-rules">
-          <p>⚔️ Du kan udfordre hold 3 placeringer over og under dig</p>
-          <p>⏰ Udfordringer skal besvares inden 14 dage</p>
-          <p>🏆 Point: Sejr = 3 pt · Uafgjort = 1 pt · Tab = 0 pt</p>
-        </div>
-
-      </div>
-
-      {/* Challenge Modal */}
-      {showChallengeModal && (
-        <div className="modal-overlay" onClick={() => setShowChallengeModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <h3 className="modal-title">⚔️ Send Udfordring</h3>
-            <p className="modal-text">Du er ved at udfordre <strong>{selectedTeam}</strong> til en officiel 3 on 3 battle!</p>
-            <p className="modal-note">En beskedtråd oprettes automatisk så I kan aftale detaljer</p>
-            <div className="modal-actions">
-              <button className="modal-confirm-btn" onClick={() => {
-                setShowChallengeModal(false);
-                navigate('/messages');
-              }}>
-                ⚔️ Send udfordring
-              </button>
-              <button className="modal-cancel-btn" onClick={() => setShowChallengeModal(false)}>
-                Annuller
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <BottomNav />
-    </div>
-  );
+.challenges-section {
+  margin-bottom: 20px;
 }
 
-export default Leaderboard;
+.challenge-card {
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 10px;
+}
+
+.challenge-card.incoming {
+  background: rgba(255, 150, 0, 0.1);
+  border: 1px solid rgba(255, 150, 0, 0.3);
+}
+
+.challenge-from {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.challenge-days {
+  font-size: 0.85rem;
+  color: rgba(255, 150, 0, 0.8);
+  margin-bottom: 4px;
+}
+
+.challenge-note {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 10px;
+}
+
+.challenge-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.accept-btn {
+  flex: 1;
+  padding: 8px;
+  background: rgba(0, 200, 100, 0.2);
+  border: 1px solid #00c864;
+  border-radius: 8px;
+  color: #00c864;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.decline-btn {
+  flex: 1;
+  padding: 8px;
+  background: rgba(255, 50, 50, 0.15);
+  border: 1px solid rgba(255, 50, 50, 0.3);
+  border-radius: 8px;
+  color: #ff6464;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.year-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.year-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 3px;
+}
+
+.year-sublabel {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.podium {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 20px 0 30px;
+}
+
+.podium-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.podium-crown {
+  font-size: 1.5rem;
+}
+
+.podium-block {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px 8px 0 0;
+  width: 80px;
+}
+
+.first-block {
+  background: linear-gradient(135deg, #c8a951, #e8c97a);
+  height: 80px;
+}
+
+.second-block {
+  background: rgba(192, 192, 192, 0.3);
+  height: 60px;
+}
+
+.third-block {
+  background: rgba(205, 127, 50, 0.3);
+  height: 45px;
+}
+
+.podium-rank {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #0a1628;
+}
+
+.podium-item:not(.first) .podium-rank {
+  color: #ffffff;
+}
+
+.podium-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-align: center;
+  max-width: 80px;
+}
+
+.podium-points {
+  font-size: 0.8rem;
+  color: #c8a951;
+  font-weight: 600;
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.leaderboard-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px 15px;
+  transition: all 0.2s ease;
+}
+
+.leaderboard-row.my-team {
+  border-color: rgba(200, 169, 81, 0.4);
+  background: rgba(200, 169, 81, 0.08);
+}
+
+.rank-number {
+  font-size: 1.1rem;
+  min-width: 35px;
+  text-align: center;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.team-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.team-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.team-name-text {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.my-team-tag {
+  background: rgba(200, 169, 81, 0.2);
+  color: #c8a951;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(200, 169, 81, 0.3);
+}
+
+.birth-year-tag {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.team-record {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.team-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.team-points {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #c8a951;
+}
+
+.mini-challenge-btn {
+  background: rgba(255, 150, 0, 0.15);
+  border: 1px solid rgba(255, 150, 0, 0.3);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mini-challenge-btn:hover {
+  background: rgba(255, 150, 0, 0.3);
+}
+
+.challenge-rules {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+.challenge-rules p {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 1.8;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+}
+
+.modal {
+  background: #1a3a5c;
+  border: 1px solid rgba(200, 169, 81, 0.3);
+  border-radius: 20px;
+  padding: 30px 25px;
+  width: 100%;
+  max-width: 350px;
+}
+
+.modal-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.modal-text {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+.modal-note {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-confirm-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #c8a951, #e8c97a);
+  border: none;
+  border-radius: 10px;
+  color: #0a1628;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.modal-cancel-btn {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 26px;
+  transition: 0.3s;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: '';
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+input:checked + .toggle-slider {
+  background: #c8a951;
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(24px);
+}
+
+.loading-text {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 30px;
+}
+
+.section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 15px;
+}
