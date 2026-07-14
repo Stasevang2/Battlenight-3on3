@@ -1,66 +1,106 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
+import { useAuth } from '../context/AuthContext';
+import {
+  getBattlenights,
+  getTeamsForBattlenight,
+  getIndividualSignups,
+  signupIndividual,
+  getShiftsForBattlenight,
+  takeShift,
+} from '../services/battlenightService';
+import type { Battlenight, Team, Shift } from '../services/battlenightService';
 import '../styles/calendar.css';
-
-const mockUpcomingEvents = [
-  {
-    id: 1,
-    date: 'Lørdag d. 18. Januar 2025',
-    time: '17:00 - 20:00',
-    spotsLeft: 8,
-    totalSpots: 36,
-    status: 'open',
-    shifts: 2,
-    shiftsTaken: 1,
-    individualPlayers: [
-      { id: 10, firstName: 'Mathias', club: 'Rungsted', playerNumber: 4, birthYear: 2012 },
-      { id: 11, firstName: 'Jonas', club: 'Herlev', playerNumber: 15, birthYear: 2013 },
-    ],
-  },
-  {
-    id: 2,
-    date: 'Lørdag d. 25. Januar 2025',
-    time: '17:00 - 20:00',
-    spotsLeft: 36,
-    totalSpots: 36,
-    status: 'open',
-    shifts: 2,
-    shiftsTaken: 0,
-    individualPlayers: [],
-  },
-  {
-    id: 3,
-    date: 'Lørdag d. 1. Februar 2025',
-    time: '17:00 - 20:00',
-    spotsLeft: 0,
-    totalSpots: 36,
-    status: 'full',
-    shifts: 2,
-    shiftsTaken: 2,
-    individualPlayers: [],
-  },
-];
-
-const mockYearEvents = [
-  { month: 'Januar', events: ['18. Jan', '25. Jan'] },
-  { month: 'Februar', events: ['1. Feb', '8. Feb', '22. Feb'] },
-  { month: 'Marts', events: ['1. Mar', '15. Mar', '29. Mar'] },
-  { month: 'April', events: ['5. Apr', '26. Apr'] },
-  { month: 'Maj', events: ['10. Maj', '24. Maj'] },
-];
 
 function Calendar() {
   const navigate = useNavigate();
-  const [showIndividual, setShowIndividual] = useState<number | null>(null);
+  const { currentUser } = useAuth();
+  const [battlenights, setBattlenights] = useState<Battlenight[]>([]);
+  const [teamsMap, setTeamsMap] = useState<{ [key: string]: Team[] }>({});
+  const [shiftsMap, setShiftsMap] = useState<{ [key: string]: Shift[] }>({});
+  const [individualMap, setIndividualMap] = useState<{ [key: string]: any[] }>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [showIndividual, setShowIndividual] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [registeredIndividual, setRegisteredIndividual] = useState(false);
+  const [registeredIndividual, setRegisteredIndividual] = useState<string[]>([]);
 
-  const handleIndividualSignup = () => {
-    setRegisteredIndividual(true);
-    setShowConfirmation(true);
-    setTimeout(() => setShowConfirmation(false), 3000);
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const events = await getBattlenights();
+      setBattlenights(events);
+
+      const teams: { [key: string]: Team[] } = {};
+      const shifts: { [key: string]: Shift[] } = {};
+      const individuals: { [key: string]: any[] } = {};
+
+      await Promise.all(events.map(async (event) => {
+        if (event.id) {
+          const [t, s, i] = await Promise.all([
+            getTeamsForBattlenight(event.id),
+            getShiftsForBattlenight(event.id),
+            getIndividualSignups(event.id),
+          ]);
+          teams[event.id] = t;
+          shifts[event.id] = s;
+          individuals[event.id] = i;
+        }
+      }));
+
+      setTeamsMap(teams);
+      setShiftsMap(shifts);
+      setIndividualMap(individuals);
+    } catch (err) {
+      console.error(err);
+    }
+    setIsLoading(false);
   };
+
+  const handleIndividualSignup = async (battlenightId: string) => {
+    if (!currentUser) return;
+    try {
+      await signupIndividual(battlenightId, currentUser.userId, currentUser.firstName);
+      setRegisteredIndividual(prev => [...prev, battlenightId]);
+      setShowConfirmation(true);
+      setTimeout(() => setShowConfirmation(false), 3000);
+      await loadData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleTakeShift = async (shiftId: string) => {
+    if (!currentUser) return;
+    try {
+      await takeShift(shiftId, currentUser.userId, currentUser.firstName);
+      await loadData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const getSpotsLeft = (battlenightId: string, maxPlayers: number) => {
+    const teams = teamsMap[battlenightId] || [];
+    const individuals = individualMap[battlenightId] || [];
+    const takenSpots = teams.reduce((sum, t) => sum + t.players.length, 0) + individuals.length;
+    return maxPlayers - takenSpots;
+  };
+
+  // Gruppér events pr måned til årskalender
+  const groupedByMonth = battlenights.reduce((acc, event) => {
+    const date = new Date(event.date);
+    const monthKey = isNaN(date.getTime())
+      ? event.date
+      : date.toLocaleString('da-DK', { month: 'long', year: 'numeric' });
+    if (!acc[monthKey]) acc[monthKey] = [];
+    acc[monthKey].push(event);
+    return acc;
+  }, {} as { [key: string]: Battlenight[] });
 
   return (
     <div className="page-container">
@@ -72,111 +112,168 @@ function Calendar() {
 
       {showConfirmation && (
         <div className="confirmation-banner">
-          ✅ Du er tilmeldt som individuel spiller! Du modtager en bekræftelse.
+          ✅ Du er tilmeldt som individuel spiller!
         </div>
       )}
 
       <div className="content">
 
-        {/* Næste 3 events */}
+        {/* Kommende events */}
         <h2 className="section-title">📅 Kommende Battlenights</h2>
-        <div className="events-list">
-          {mockUpcomingEvents.map((event) => (
-            <div key={event.id} className={`event-card ${event.status}`}>
-              <div className="event-header">
-                <span className={`event-status-badge ${event.status}`}>
-                  {event.status === 'open' ? '🟢 ÅBEN' : '🔴 FULDT'}
-                </span>
-                <button
-                  className="event-shifts-btn"
-                  onClick={() => navigate('/admin')}
-                >
-                  🛡️ Vagter: {event.shiftsTaken}/{event.shifts}
-                </button>
-              </div>
 
-              <h3 className="event-date">{event.date}</h3>
-              <p className="event-time">⏰ {event.time}</p>
+        {isLoading ? (
+          <p className="loading-text">⏳ Henter events...</p>
+        ) : battlenights.filter(e => e.status === 'open' || e.status === 'closed').length === 0 ? (
+          <div className="no-events">
+            <p>🏒 Ingen kommende Battlenights endnu</p>
+            <p>Hold øje med appen - nye events annonceres her!</p>
+          </div>
+        ) : (
+          <div className="events-list">
+            {battlenights
+              .filter(e => e.status === 'open' || e.status === 'closed')
+              .slice(0, 3)
+              .map((event) => {
+                const spotsLeft = getSpotsLeft(event.id!, event.maxPlayers);
+                const shifts = shiftsMap[event.id!] || [];
+                const individuals = individualMap[event.id!] || [];
+                const takenShifts = shifts.filter(s => s.taken).length;
+                const isRegisteredIndividual = registeredIndividual.includes(event.id!) ||
+                  individuals.some((i: any) => i.userId === currentUser?.userId);
 
-              <div className="spots-container">
-                <div className="spots-bar">
-                  <div
-                    className="spots-fill"
-                    style={{
-                      width: `${((event.totalSpots - event.spotsLeft) / event.totalSpots) * 100}%`,
-                    }}
-                  />
-                </div>
-                <p className="spots-text">
-                  {event.totalSpots - event.spotsLeft} / {event.totalSpots} spillere tilmeldt
-                </p>
-              </div>
+                return (
+                  <div key={event.id} className={`event-card ${event.status}`}>
+                    <div className="event-header">
+                      <span className={`event-status-badge ${event.status}`}>
+                        {event.status === 'open' ? '🟢 ÅBEN' : '🔴 LUKKET'}
+                      </span>
+                      {(currentUser?.role === 'admin' || currentUser?.role === 'superadmin') && (
+                        <button
+                          className="event-shifts-btn"
+                          onClick={() => navigate('/admin')}
+                        >
+                          🛡️ Vagter: {takenShifts}/{shifts.length}
+                        </button>
+                      )}
+                    </div>
 
-              {/* Individuelle spillere */}
-              <button
-                className="individual-toggle"
-                onClick={() => setShowIndividual(showIndividual === event.id ? null : event.id)}
-              >
-                🏒 Individuelle spillere ({event.individualPlayers.length})
-                {showIndividual === event.id ? ' ▲' : ' ▼'}
-              </button>
+                    <h3 className="event-date">{event.date}</h3>
+                    <p className="event-time">⏰ {event.time}</p>
+                    <p className="event-price">💰 {event.price} kr pr. spiller</p>
 
-              {showIndividual === event.id && (
-                <div className="individual-players-list">
-                  {event.individualPlayers.length > 0 ? (
-                    event.individualPlayers.map(player => (
-                      <div key={player.id} className="individual-player">
-                        <span>#{player.playerNumber} {player.firstName}</span>
-                        <span className="player-details">{player.club} · {player.birthYear}</span>
+                    <div className="spots-container">
+                      <div className="spots-bar">
+                        <div
+                          className="spots-fill"
+                          style={{
+                            width: `${((event.maxPlayers - spotsLeft) / event.maxPlayers) * 100}%`,
+                          }}
+                        />
                       </div>
-                    ))
-                  ) : (
-                    <p className="no-individual">Ingen individuelle spillere endnu</p>
-                  )}
+                      <p className="spots-text">
+                        {event.maxPlayers - spotsLeft} / {event.maxPlayers} spillere tilmeldt
+                      </p>
+                    </div>
 
-                  {event.status === 'open' && !registeredIndividual && (
-                    <button className="join-individual-btn" onClick={handleIndividualSignup}>
-                      + Tilmeld mig som individuel spiller
+                    {/* Individuelle spillere */}
+                    <button
+                      className="individual-toggle"
+                      onClick={() => setShowIndividual(showIndividual === event.id ? null : event.id!)}
+                    >
+                      🏒 Individuelle spillere ({individuals.length})
+                      {showIndividual === event.id ? ' ▲' : ' ▼'}
                     </button>
-                  )}
-                  {registeredIndividual && (
-                    <p className="registered-individual">✅ Du er tilmeldt som individuel spiller</p>
-                  )}
+
+                    {showIndividual === event.id && (
+                      <div className="individual-players-list">
+                        {individuals.length > 0 ? (
+                          individuals.map((player: any) => (
+                            <div key={player.id} className="individual-player">
+                              <span>{player.userName}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="no-individual">Ingen individuelle spillere endnu</p>
+                        )}
+
+                        {event.status === 'open' && !isRegisteredIndividual && (
+                          <button
+                            className="join-individual-btn"
+                            onClick={() => handleIndividualSignup(event.id!)}
+                          >
+                            + Tilmeld mig som individuel spiller
+                          </button>
+                        )}
+                        {isRegisteredIndividual && (
+                          <p className="registered-individual">
+                            ✅ Du er tilmeldt som individuel spiller
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Admin: Tag vagt */}
+                    {(currentUser?.role === 'admin' || currentUser?.role === 'superadmin') &&
+                      shifts.some(s => !s.taken) && (
+                        <div className="shift-section">
+                          <h4 className="shift-title">🛡️ Ledige vagter</h4>
+                          {shifts.filter(s => !s.taken).map(shift => (
+                            <button
+                              key={shift.id}
+                              className="take-shift-inline-btn"
+                              onClick={() => handleTakeShift(shift.id!)}
+                            >
+                              Tag vagt #{shift.shiftNumber}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                    <div className="event-actions">
+                      {event.status === 'open' ? (
+                        <button
+                          className="event-btn primary"
+                          onClick={() => navigate('/myteam')}
+                        >
+                          🏒 Tilmeld dig
+                        </button>
+                      ) : (
+                        <button className="event-btn disabled" disabled>
+                          🔴 Lukket for tilmelding
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        )}
+
+        {/* Årskalender - kun hvis der er events */}
+        {Object.keys(groupedByMonth).length > 0 && (
+          <>
+            <h2 className="section-title" style={{ marginTop: '30px' }}>
+              📆 Alle Events
+            </h2>
+            <div className="year-calendar">
+              {Object.entries(groupedByMonth).map(([month, events]) => (
+                <div key={month} className="month-card">
+                  <h3 className="month-name">{month}</h3>
+                  <div className="month-events">
+                    {events.map(event => (
+                      <span
+                        key={event.id}
+                        className={`month-event-badge ${event.status}`}
+                      >
+                        🏒 {event.date}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              )}
-
-              <div className="event-actions">
-                {event.status === 'open' ? (
-                  <button className="event-btn primary" onClick={() => navigate('/myteam')}>
-                    👥 Tilmeld hold
-                  </button>
-                ) : (
-                  <button className="event-btn disabled" disabled>
-                    🔴 Fuldt booket
-                  </button>
-                )}
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-
-        {/* Årskalender */}
-        <h2 className="section-title" style={{ marginTop: '30px' }}>📆 Årskalender 2025</h2>
-        <p className="calendar-note">Alle planlagte Battlenights for 2025</p>
-        <div className="year-calendar">
-          {mockYearEvents.map(month => (
-            <div key={month.month} className="month-card">
-              <h3 className="month-name">{month.month}</h3>
-              <div className="month-events">
-                {month.events.map(event => (
-                  <span key={event} className="month-event-badge">
-                    🏒 {event}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+          </>
+        )}
 
       </div>
       <BottomNav />

@@ -53,11 +53,32 @@
   font-size: 0.95rem;
   font-weight: 700;
   color: #ffffff;
+  flex: 1;
+}
+
+.rule-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .rule-arrow {
   color: #c8a951;
   font-size: 0.8rem;
+}
+
+.rule-edit-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.rule-edit-btn:hover {
+  background: rgba(200, 169, 81, 0.2);
 }
 
 .rule-content {
@@ -70,4 +91,89 @@
   color: rgba(255, 255, 255, 0.7);
   line-height: 1.6;
   padding-top: 12px;
+}
+
+/* Edit mode */
+.rule-edit {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rule-edit-title {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(200, 169, 81, 0.4);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  outline: none;
+  width: 100%;
+}
+
+.rule-edit-content {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  width: 100%;
+}
+
+.rule-edit-content:focus {
+  border-color: #c8a951;
+}
+
+.rule-edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.rule-save-btn {
+  flex: 1;
+  padding: 10px;
+  background: rgba(0, 200, 100, 0.15);
+  border: 1px solid #00c864;
+  border-radius: 8px;
+  color: #00c864;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rule-cancel-btn {
+  flex: 1;
+  padding: 10px;
+  background: rgba(255, 50, 50, 0.1);
+  border: 1px solid rgba(255, 50, 50, 0.3);
+  border-radius: 8px;
+  color: #ff6464;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.save-banner {
+  background: rgba(0, 200, 100, 0.15);
+  border: 1px solid #00c864;
+  color: #00c864;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+.loading-text {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 30px;
 }

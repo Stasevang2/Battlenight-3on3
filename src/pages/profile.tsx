@@ -3,25 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { useAuth } from '../context/AuthContext';
 import { requestAdminRole, updateUser } from '../services/userService';
+import { getFoodOrdersForUser } from '../services/menuService';
+import { getNotificationsForUser, markAllAsRead } from '../services/notificationService';
+import type { FoodOrder } from '../services/menuService';
+import type { Notification } from '../services/notificationService';
 import '../styles/profile.css';
-
-const mockBalanceHistory = [
-  { id: 1, type: 'deposit', description: 'MobilePay indbetaling', amount: 100, date: '10. Jan 2025' },
-  { id: 2, type: 'deduct', description: 'Battlenight deltagelse', amount: -25, date: '11. Jan 2025' },
-  { id: 3, type: 'deposit', description: 'MobilePay indbetaling', amount: 50, date: '3. Jan 2025' },
-  { id: 4, type: 'penalty', description: 'No-show straf', amount: -12, date: '4. Jan 2025' },
-];
-
-const mockFoodOrders = [
-  { event: '18. Jan 2025', items: 'Hotdog x2, Vand x1', total: 60 },
-  { event: '11. Jan 2025', items: 'Sodavand x2', total: 30 },
-];
 
 function Profile() {
   const navigate = useNavigate();
   const { currentUser, setCurrentUser } = useAuth();
   const [showBalanceHistory, setShowBalanceHistory] = useState(false);
   const [showFoodOrders, setShowFoodOrders] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [foodOrders, setFoodOrders] = useState<FoodOrder[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [contact, setContact] = useState({
     phone: currentUser?.contact?.phone || '',
     snap: currentUser?.contact?.snap || '',
@@ -30,12 +25,29 @@ function Profile() {
   const [saved, setSaved] = useState(false);
   const [adminRequestSent, setAdminRequestSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     if (currentUser?.adminRequest === 'pending') {
       setAdminRequestSent(true);
     }
+    loadData();
   }, [currentUser]);
+
+  const loadData = async () => {
+    if (!currentUser) return;
+    try {
+      const [orders, notifs] = await Promise.all([
+        getFoodOrdersForUser(currentUser.userId),
+        getNotificationsForUser(currentUser.userId),
+      ]);
+      setFoodOrders(orders);
+      setNotifications(notifs);
+      setUnreadCount(notifs.filter(n => !n.read).length);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleSave = async () => {
     if (!currentUser?.id) return;
@@ -62,6 +74,21 @@ function Profile() {
       console.error(err);
     }
     setIsLoading(false);
+  };
+
+  const handleShowNotifications = async () => {
+    setShowNotifications(!showNotifications);
+    if (!showNotifications && currentUser) {
+      await markAllAsRead(currentUser.userId);
+      setUnreadCount(0);
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    }
+  };
+
+  const formatTimestamp = (timestamp: any) => {
+    if (!timestamp) return '';
+    if (timestamp?.toDate) return timestamp.toDate().toLocaleDateString('da-DK');
+    return new Date(timestamp).toLocaleDateString('da-DK');
   };
 
   if (!currentUser) {
@@ -93,7 +120,40 @@ function Profile() {
           <p className="profile-year">Årgang {currentUser.birthYear}</p>
           <div className="mobilepay-hint">
             <p>💳 Brug dit Bruger ID <strong>{currentUser.userId}</strong> som besked ved MobilePay indbetaling</p>
+            <p className="mobilepay-note">⏰ Der kan gå 1-2 hverdage inden betalingen registreres</p>
           </div>
+        </div>
+
+        {/* Notifikationer */}
+        <div className="notifications-card">
+          <button
+            className="notifications-toggle"
+            onClick={handleShowNotifications}
+          >
+            <span>🔔 Notifikationer</span>
+            <div className="notif-header-right">
+              {unreadCount > 0 && (
+                <span className="notif-badge">{unreadCount}</span>
+              )}
+              <span>{showNotifications ? '▲' : '▼'}</span>
+            </div>
+          </button>
+
+          {showNotifications && (
+            <div className="notifications-list">
+              {notifications.length === 0 ? (
+                <p className="no-notif">Ingen notifikationer endnu</p>
+              ) : (
+                notifications.slice(0, 10).map(notif => (
+                  <div key={notif.id} className={`notif-item ${!notif.read ? 'unread' : ''}`}>
+                    <p className="notif-title">{notif.title}</p>
+                    <p className="notif-message">{notif.message}</p>
+                    <p className="notif-time">{formatTimestamp(notif.createdAt)}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
 
         {/* Saldo */}
@@ -109,7 +169,6 @@ function Profile() {
             <div className="balance-warning">
               <p>⚠️ Du har negativ saldo</p>
               <p>Indbetal via MobilePay med dit Bruger ID <strong>{currentUser.userId}</strong> som besked</p>
-              <p className="warning-note">⏰ Der kan gå 1-2 hverdage inden betalingen registreres</p>
             </div>
           )}
 
@@ -117,22 +176,13 @@ function Profile() {
             className="history-toggle"
             onClick={() => setShowBalanceHistory(!showBalanceHistory)}
           >
-            📋 Se alle bevægelser {showBalanceHistory ? '▲' : '▼'}
+            📋 Se saldo historik {showBalanceHistory ? '▲' : '▼'}
           </button>
 
           {showBalanceHistory && (
-            <div className="balance-history-list">
-              {mockBalanceHistory.map(item => (
-                <div key={item.id} className={`history-row ${item.amount > 0 ? 'positive' : item.type === 'penalty' ? 'penalty' : 'negative'}`}>
-                  <div className="history-info">
-                    <span className="history-desc">{item.description}</span>
-                    <span className="history-date">{item.date}</span>
-                  </div>
-                  <span className="history-amount">
-                    {item.amount > 0 ? '+' : ''}{item.amount} kr
-                  </span>
-                </div>
-              ))}
+            <div className="balance-history-note">
+              <p>📊 Saldo historik vises når der er registreret bevægelser på din konto</p>
+              <p>Kontakt en admin hvis du mener der er fejl i din saldo</p>
             </div>
           )}
         </div>
@@ -157,7 +207,7 @@ function Profile() {
           <p className="stats-note">⚔️ Sejre og nederlag er kun fra officielle udfordringskampe</p>
         </div>
 
-        {/* Mad & Drikke bestillinger */}
+        {/* Mad bestillinger */}
         <div className="food-orders-card">
           <div className="card-header-row">
             <h3 className="card-title">🍔 Mine Bestillinger</h3>
@@ -173,15 +223,21 @@ function Profile() {
           </button>
           {showFoodOrders && (
             <div className="food-orders-list">
-              {mockFoodOrders.map((order, index) => (
-                <div key={index} className="food-order-row">
-                  <div>
-                    <p className="order-event">🏒 {order.event}</p>
-                    <p className="order-items">{order.items}</p>
+              {foodOrders.length === 0 ? (
+                <p className="no-orders">Ingen bestillinger endnu</p>
+              ) : (
+                foodOrders.map((order, index) => (
+                  <div key={index} className="food-order-row">
+                    <div>
+                      <p className="order-event">🏒 {formatTimestamp(order.createdAt)}</p>
+                      <p className="order-items">
+                        {order.items.map(i => `${i.name} x${i.quantity}`).join(', ')}
+                      </p>
+                    </div>
+                    <span className="order-total">{order.totalAmount} kr</span>
                   </div>
-                  <span className="order-total">{order.total} kr</span>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           )}
         </div>
@@ -241,7 +297,7 @@ function Profile() {
           </button>
         </div>
 
-        {/* Bliv Admin sektion */}
+        {/* Bliv Admin */}
         {currentUser.role === 'player' && (
           <div className="admin-request-card">
             <h3 className="card-title">🛡️ Bliv Admin/Vagt</h3>
