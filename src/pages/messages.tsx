@@ -8,7 +8,6 @@ import {
   sendMessage,
   createConversation,
   markConversationAsRead,
-  getTotalUnreadCount,
 } from '../services/messageService';
 import type { Conversation, Message } from '../services/messageService';
 import { getAllUsers } from '../services/userService';
@@ -155,7 +154,9 @@ function Messages() {
           <button className="back-btn" onClick={() => navigate('/dashboard')}>← Tilbage</button>
         )}
         <h1 className="page-title">
-          {activeConversation ? getConvName(activeConversation).toUpperCase().substring(0, 15) : 'BESKEDER'}
+          {activeConversation
+            ? getConvName(activeConversation).toUpperCase().substring(0, 15)
+            : 'BESKEDER'}
         </h1>
         {!activeConversation && (
           <button className="new-chat-btn" onClick={() => setShowNewChat(!showNewChat)}>✏️</button>
@@ -239,11 +240,16 @@ function Messages() {
                           <span className="conv-name">{getConvName(conv)}</span>
                           <span className="conv-time">
                             {conv.lastMessageTime
-                              ? (conv.lastMessageTime as any)?.toDate?.()?.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })
+                              ? (conv.lastMessageTime as any)?.toDate?.()?.toLocaleTimeString('da-DK', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })
                               : ''}
                           </span>
                         </div>
-                        <p className="conv-last-message">{conv.lastMessage || 'Ingen beskeder endnu'}</p>
+                        <p className="conv-last-message">
+                          {conv.lastMessage || 'Ingen beskeder endnu'}
+                        </p>
                         {conv.battlenightDate && (
                           <span className="conv-event-tag">🏒 {conv.battlenightDate}</span>
                         )}
@@ -262,14 +268,20 @@ function Messages() {
         <div className="chat-container">
           <div className="messages-list">
             {messages.map((msg) => (
-              <div key={msg.id} className={`message ${msg.fromUserId === currentUser.userId ? 'mine' : 'theirs'}`}>
+              <div
+                key={msg.id}
+                className={`message ${msg.fromUserId === currentUser.userId ? 'mine' : 'theirs'}`}
+              >
                 {msg.fromUserId !== currentUser.userId && (
                   <span className="message-from">{msg.fromUserName}</span>
                 )}
                 <div className="message-bubble">
                   <p>{msg.text}</p>
                   <span className="message-time">
-                    {(msg.createdAt as any)?.toDate?.()?.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' }) || ''}
+                    {(msg.createdAt as any)?.toDate?.()?.toLocaleTimeString('da-DK', {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }) || ''}
                   </span>
                 </div>
               </div>
