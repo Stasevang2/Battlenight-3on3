@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { User } from '../services/userService';
+import { getUserByUserId } from '../services/userService';
 
 type AuthContextType = {
   currentUser: User | null;
@@ -21,19 +22,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('battlenight_user');
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-    }
-    setIsLoading(false);
+    const initAuth = async () => {
+      try {
+        const savedUserId = localStorage.getItem('battlenight_userId');
+        if (savedUserId) {
+          // Hent frisk data fra Firebase ved refresh
+          const user = await getUserByUserId(savedUserId);
+          if (user) {
+            setCurrentUser(user);
+          } else {
+            localStorage.removeItem('battlenight_userId');
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        localStorage.removeItem('battlenight_userId');
+      }
+      setIsLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   const handleSetCurrentUser = (user: User | null) => {
     setCurrentUser(user);
     if (user) {
-      localStorage.setItem('battlenight_user', JSON.stringify(user));
+      // Gem kun userId - henter frisk data ved næste login
+      localStorage.setItem('battlenight_userId', user.userId);
     } else {
-      localStorage.removeItem('battlenight_user');
+      localStorage.removeItem('battlenight_userId');
     }
   };
 
