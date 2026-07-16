@@ -861,3 +861,70 @@
   border: 1px solid rgba(255, 50, 50, 0.3);
   color: rgba(255, 100, 100, 0.9);
 }
+
+.existing-teams-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.existing-team-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(200, 169, 81, 0.3);
+  border-radius: 12px;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.existing-team-info {
+  flex: 1;
+}
+
+.existing-team-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.existing-team-details {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 8px;
+}
+
+.existing-team-players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.existing-player-tag {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.use-team-btn {
+  padding: 10px 15px;
+  background: linear-gradient(135deg, #c8a951, #e8c97a);
+  border: none;
+  border-radius: 8px;
+  color: #0a1628;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Highlight card */
+.type-choice-card.highlight {
+  border-color: rgba(200, 169, 81, 0.5);
+  background: rgba(200, 169, 81, 0.08);
+}

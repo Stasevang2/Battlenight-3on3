@@ -18,13 +18,14 @@ import type { User } from '../services/userService';
 import { createNotification } from '../services/notificationService';
 import '../styles/myteam.css';
 
-type FlowStep = 'overview' | 'choose-type' | 'create-team' | 'individual-confirm';
+type FlowStep = 'overview' | 'choose-type' | 'choose-existing' | 'create-team' | 'individual-confirm';
 
 function MyTeam() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const [battlenights, setBattlenights] = useState<Battlenight[]>([]);
   const [myTeams, setMyTeams] = useState<Team[]>([]);
+  const [pastTeams, setPastTeams] = useState<Team[]>([]);
   const [myInvites, setMyInvites] = useState<TeamInvite[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,6 +56,11 @@ function MyTeam() {
         getAllUsers(),
       ]);
 
+      const openBattlenightIds = events
+        .filter((e: Battlenight) => e.status === 'open')
+        .map(e => e.id);
+
+      // Hold tilmeldt til åbne events
       const allMyTeams = [...leaderTeams];
       playerTeams.forEach((t: Team) => {
         if (!allMyTeams.find(lt => lt.id === t.id)) {
@@ -62,14 +68,64 @@ function MyTeam() {
         }
       });
 
+      const activeTeams = allMyTeams.filter(t => openBattlenightIds.includes(t.battlenightId));
+      
+      // Tidligere hold (holdleder) til genbrug
+      const previousTeams = leaderTeams.filter(t => !openBattlenightIds.includes(t.battlenightId));
+      
+      // Unik liste af tidligere holdnavne
+      const uniquePastTeams = previousTeams.reduce((acc: Team[], team) => {
+        if (!acc.find(t => t.teamName === team.teamName)) {
+          acc.push(team);
+        }
+        return acc;
+      }, []);
+
       setBattlenights(events.filter((e: Battlenight) => e.status === 'open'));
-      setMyTeams(allMyTeams);
+      setMyTeams(activeTeams);
+      setPastTeams(uniquePastTeams);
       setMyInvites(invites);
       setAllUsers(users.filter((u: User) => u.userId !== currentUser.userId));
     } catch (err) {
       console.error(err);
     }
     setIsLoading(false);
+  };
+
+  const handleReuseTeam = async (existingTeam: Team) => {
+    if (!currentUser || !selectedBattlenight) return;
+
+    // Opret nyt hold baseret på det eksisterende
+    const team: Omit<Team, 'id' | 'createdAt'> = {
+      battlenightId: selectedBattlenight.id!,
+      teamName: existingTeam.teamName,
+      leaderId: currentUser.userId,
+      leaderName: currentUser.firstName,
+      players: [
+        {
+          userId: currentUser.userId,
+          firstName: currentUser.firstName,
+          playerNumber: currentUser.playerNumber,
+          club: currentUser.club,
+          birthYear: currentUser.birthYear,
+          status: 'accepted',
+        },
+      ],
+      equipment: existingTeam.equipment,
+      paid: false,
+      present: null,
+      isIndividual: false,
+    };
+
+    try {
+      await createTeam(team);
+      setConfirmationText(`✅ Holdet "${existingTeam.teamName}" er tilmeldt ${selectedBattlenight.date}! Inviter dine spillere.`);
+      setShowConfirmation(true);
+      setFlowStep('overview');
+      await loadData();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleCreateTeam = async () => {
@@ -205,7 +261,6 @@ function MyTeam() {
     } else {
       const updatedPlayers = team.players.filter((p: TeamPlayer) => p.userId !== currentUser.userId);
       await updateTeam(team.id!, { players: updatedPlayers });
-
       await createNotification({
         toUserId: team.leaderId,
         type: 'general',
@@ -249,6 +304,7 @@ function MyTeam() {
       setConfirmationText(`✅ Invitation sendt til ${user.firstName}!`);
       setShowConfirmation(true);
       setTimeout(() => setShowConfirmation(false), 3000);
+      setSearchQuery('');
     } catch (err) {
       console.error(err);
     }
@@ -292,6 +348,7 @@ function MyTeam() {
         <h1 className="page-title">
           {flowStep === 'overview' && 'MIT HOLD'}
           {flowStep === 'choose-type' && 'TILMELD DIG'}
+          {flowStep === 'choose-existing' && 'VÆLG HOLD'}
           {flowStep === 'create-team' && 'OPRET HOLD'}
           {flowStep === 'individual-confirm' && 'INDIVIDUEL'}
         </h1>
@@ -305,9 +362,7 @@ function MyTeam() {
       )}
 
       {copiedText && (
-        <div className="copied-banner">
-          📋 Tekst kopieret!
-        </div>
+        <div className="copied-banner">📋 Tekst kopieret!</div>
       )}
 
       <div className="content">
@@ -330,16 +385,10 @@ function MyTeam() {
                       <p className="invite-date">📅 {invite.battlenightDate}</p>
                     </div>
                     <div className="invite-actions">
-                      <button
-                        className="accept-invite-btn"
-                        onClick={() => handleRespondToInvite(invite, true)}
-                      >
+                      <button className="accept-invite-btn" onClick={() => handleRespondToInvite(invite, true)}>
                         ✅ Acceptér
                       </button>
-                      <button
-                        className="decline-invite-btn"
-                        onClick={() => handleRespondToInvite(invite, false)}
-                      >
+                      <button className="decline-invite-btn" onClick={() => handleRespondToInvite(invite, false)}>
                         ❌ Afvis
                       </button>
                     </div>
@@ -382,7 +431,7 @@ function MyTeam() {
                   </div>
                 )}
 
-                {/* Mine hold */}
+                {/* Mine aktive hold */}
                 {myTeams.length > 0 && (
                   <>
                     <h2 className="section-title" style={{ marginTop: '20px' }}>👥 Mine Hold</h2>
@@ -433,9 +482,7 @@ function MyTeam() {
                                       {player.placeholderName || player.firstName}
                                       {player.userId === team.leaderId && ' 👑'}
                                     </p>
-                                    <p className="player-details">
-                                      {player.club || 'Ukendt klub'}
-                                    </p>
+                                    <p className="player-details">{player.club || 'Ukendt klub'}</p>
                                   </div>
                                   <span className={`player-status-tag ${player.status}`}>
                                     {player.status === 'accepted' && '✅'}
@@ -476,10 +523,7 @@ function MyTeam() {
                                           ) : (
                                             <button
                                               className="invite-small-btn"
-                                              onClick={() => {
-                                                handleInvitePlayer(team, user.userId);
-                                                setSearchQuery('');
-                                              }}
+                                              onClick={() => handleInvitePlayer(team, user.userId)}
                                             >
                                               Inviter
                                             </button>
@@ -496,33 +540,26 @@ function MyTeam() {
                                   className="invite-copy-btn"
                                   onClick={() => setShowInviteText(showInviteText === `team-${team.id}` ? null : `team-${team.id}`)}
                                 >
-                                  📲 Inviter via SMS/Snap
-                                  {showInviteText === `team-${team.id}` ? ' ▲' : ' ▼'}
+                                  📲 Inviter via SMS/Snap {showInviteText === `team-${team.id}` ? '▲' : '▼'}
                                 </button>
                                 <button
                                   className="invite-copy-btn opponent"
                                   onClick={() => setShowInviteText(showInviteText === `opp-${team.id}` ? null : `opp-${team.id}`)}
                                 >
-                                  ⚔️ Udfordr ny spiller
-                                  {showInviteText === `opp-${team.id}` ? ' ▲' : ' ▼'}
+                                  ⚔️ Udfordr ny spiller {showInviteText === `opp-${team.id}` ? '▲' : '▼'}
                                 </button>
                               </div>
 
                               {showInviteText === `team-${team.id}` && (
                                 <div className="invite-text-box">
-                                  <p className="invite-text-label">
-                                    📋 Kopiér og send til din ven via SMS eller Snapchat:
-                                  </p>
+                                  <p className="invite-text-label">📋 Kopiér og send til din ven:</p>
                                   <textarea
                                     className="invite-textarea"
                                     readOnly
                                     value={generateInviteText('team', team.teamName, battlenights.find(b => b.id === team.battlenightId)?.date)}
                                     rows={8}
                                   />
-                                  <button
-                                    className="copy-btn"
-                                    onClick={() => handleCopy(generateInviteText('team', team.teamName, battlenights.find(b => b.id === team.battlenightId)?.date))}
-                                  >
+                                  <button className="copy-btn" onClick={() => handleCopy(generateInviteText('team', team.teamName, battlenights.find(b => b.id === team.battlenightId)?.date))}>
                                     📋 Kopiér tekst
                                   </button>
                                 </div>
@@ -530,19 +567,14 @@ function MyTeam() {
 
                               {showInviteText === `opp-${team.id}` && (
                                 <div className="invite-text-box opponent">
-                                  <p className="invite-text-label">
-                                    ⚔️ Kopiér og send udfordringen til en modstander:
-                                  </p>
+                                  <p className="invite-text-label">⚔️ Kopiér og send udfordringen:</p>
                                   <textarea
                                     className="invite-textarea"
                                     readOnly
                                     value={generateInviteText('opponent', team.teamName)}
                                     rows={8}
                                   />
-                                  <button
-                                    className="copy-btn opponent"
-                                    onClick={() => handleCopy(generateInviteText('opponent', team.teamName))}
-                                  >
+                                  <button className="copy-btn opponent" onClick={() => handleCopy(generateInviteText('opponent', team.teamName))}>
                                     📋 Kopiér udfordring
                                   </button>
                                 </div>
@@ -552,16 +584,11 @@ function MyTeam() {
 
                           {/* Handlinger */}
                           <div className="team-actions">
-                            <button
-                              className="action-btn danger"
-                              onClick={() => handleLeaveTeam(team)}
-                            >
+                            <button className="action-btn danger" onClick={() => handleLeaveTeam(team)}>
                               {isLeader ? '⚠️ Meld afbud som holdleder' : '⚠️ Forlad holdet'}
                             </button>
                             {isLeader && (
-                              <p className="action-note">
-                                ℹ️ Dine medspillere notificeres automatisk ved afbud
-                              </p>
+                              <p className="action-note">ℹ️ Dine medspillere notificeres automatisk ved afbud</p>
                             )}
                           </div>
                         </div>
@@ -586,14 +613,29 @@ function MyTeam() {
             <h2 className="section-title">Hvordan vil du deltage?</h2>
 
             <div className="type-choice-cards">
+              {/* Genbrug eksisterende hold - kun hvis holdleder har tidligere hold */}
+              {pastTeams.length > 0 && (
+                <button
+                  className="type-choice-card highlight"
+                  onClick={() => setFlowStep('choose-existing')}
+                >
+                  <span className="type-choice-icon">🔄</span>
+                  <h3 className="type-choice-title">Brug eksisterende hold</h3>
+                  <p className="type-choice-desc">
+                    Du har {pastTeams.length} tidligere hold du kan genbruge.
+                    Tilmeld dit hold og inviter dine spillere!
+                  </p>
+                </button>
+              )}
+
               <button
                 className="type-choice-card"
                 onClick={() => setFlowStep('create-team')}
               >
                 <span className="type-choice-icon">👑</span>
-                <h3 className="type-choice-title">Opret hold</h3>
+                <h3 className="type-choice-title">Opret nyt hold</h3>
                 <p className="type-choice-desc">
-                  Du er holdleder. Opret dit hold og inviter 1-2 medspillere.
+                  Opret et nyt hold og inviter 1-2 medspillere.
                   Du kan spille med færre spillere eller finde nogen på dagen.
                 </p>
               </button>
@@ -605,11 +647,59 @@ function MyTeam() {
                 <span className="type-choice-icon">🏒</span>
                 <h3 className="type-choice-title">Individuel spiller</h3>
                 <p className="type-choice-desc">
-                  Tilmeld dig uden hold. Du kan finde hold på dagen eller
-                  acceptere en invitation fra en holdleder.
+                  Tilmeld dig uden hold. Find hold på dagen eller
+                  accepter en invitation fra en holdleder.
                 </p>
               </button>
             </div>
+          </div>
+        )}
+
+        {/* ============ CHOOSE EXISTING TEAM ============ */}
+        {flowStep === 'choose-existing' && selectedBattlenight && (
+          <div>
+            <div className="chosen-event-card">
+              <p className="chosen-event-label">Battlenight:</p>
+              <h3 className="chosen-event-date">{selectedBattlenight.date}</h3>
+            </div>
+
+            <h2 className="section-title">Vælg dit hold</h2>
+            <p className="form-hint">💡 Holdets navn og rangliste placering bevares. Du kan invitere nye spillere efter tilmelding.</p>
+
+            <div className="existing-teams-list">
+              {pastTeams.map(team => (
+                <div key={team.id} className="existing-team-card">
+                  <div className="existing-team-info">
+                    <h3 className="existing-team-name">🏒 {team.teamName}</h3>
+                    <p className="existing-team-details">
+                      {team.equipment === 'full' ? '🏒 Fuldt udstyr' : '🧤 Basis udstyr'}
+                      · {team.players.length} spillere sidst
+                    </p>
+                    <div className="existing-team-players">
+                      {team.players.slice(0, 3).map((p: TeamPlayer, i: number) => (
+                        <span key={i} className="existing-player-tag">
+                          {p.placeholderName || p.firstName}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    className="use-team-btn"
+                    onClick={() => handleReuseTeam(team)}
+                  >
+                    Brug dette hold
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              className="action-btn secondary"
+              style={{ marginTop: '15px' }}
+              onClick={() => setFlowStep('choose-type')}
+            >
+              ← Tilbage
+            </button>
           </div>
         )}
 
@@ -630,7 +720,7 @@ function MyTeam() {
                 value={teamName}
                 onChange={(e) => setTeamName(e.target.value)}
               />
-              <p className="form-hint">💡 Hvis du ikke vælger et navn bruges "Team {currentUser.firstName}"</p>
+              <p className="form-hint">💡 Holdnavnet bruges på ranglisten - vælg et navn du vil beholde!</p>
             </div>
 
             <div className="form-section">
@@ -707,9 +797,7 @@ function MyTeam() {
                     return (
                       <div key={userId} className="selected-player-item">
                         <span>✅ {user?.firstName || userId}</span>
-                        <button onClick={() => setSelectedPlayers(prev => prev.filter(id => id !== userId))}>
-                          ✕
-                        </button>
+                        <button onClick={() => setSelectedPlayers(prev => prev.filter(id => id !== userId))}>✕</button>
                       </div>
                     );
                   })}
@@ -731,20 +819,12 @@ function MyTeam() {
                     <textarea
                       className="invite-textarea"
                       readOnly
-                      value={generateInviteText(
-                        'team',
-                        teamName || `Team ${currentUser.firstName}`,
-                        selectedBattlenight.date
-                      )}
+                      value={generateInviteText('team', teamName || `Team ${currentUser.firstName}`, selectedBattlenight.date)}
                       rows={8}
                     />
                     <button
                       className="copy-btn"
-                      onClick={() => handleCopy(generateInviteText(
-                        'team',
-                        teamName || `Team ${currentUser.firstName}`,
-                        selectedBattlenight.date
-                      ))}
+                      onClick={() => handleCopy(generateInviteText('team', teamName || `Team ${currentUser.firstName}`, selectedBattlenight.date))}
                     >
                       📋 Kopiér tekst
                     </button>
@@ -754,16 +834,10 @@ function MyTeam() {
             </div>
 
             <div className="create-actions">
-              <button
-                className="action-btn primary"
-                onClick={handleCreateTeam}
-              >
+              <button className="action-btn primary" onClick={handleCreateTeam}>
                 ✅ Opret hold og tilmeld
               </button>
-              <button
-                className="action-btn secondary"
-                onClick={() => setFlowStep('choose-type')}
-              >
+              <button className="action-btn secondary" onClick={() => setFlowStep('choose-type')}>
                 ← Tilbage
               </button>
             </div>
@@ -804,10 +878,7 @@ function MyTeam() {
               >
                 ✅ Bekræft tilmelding
               </button>
-              <button
-                className="action-btn secondary"
-                onClick={() => setFlowStep('choose-type')}
-              >
+              <button className="action-btn secondary" onClick={() => setFlowStep('choose-type')}>
                 ← Tilbage
               </button>
             </div>
@@ -815,7 +886,6 @@ function MyTeam() {
         )}
 
       </div>
-
       <BottomNav />
     </div>
   );

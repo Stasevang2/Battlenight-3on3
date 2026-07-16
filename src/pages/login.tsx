@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser, createUser } from '../services/userService';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/logo.svg';
 import '../styles/login.css';
 
 function Login() {
@@ -65,10 +64,20 @@ function Login() {
   return (
     <div className="login-container">
       <div className="login-box">
+
+        {/* Logo */}
         <div className="logo-container">
-          <img src={logo} alt="3on3 Battlenight Rungsted" className="logo" />
+          <img
+            src="/logo.png"
+            alt="3on3 Battlenight"
+            className="logo"
+            onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
         </div>
 
+        {/* Toggle */}
         <div className="toggle-container">
           <button
             className={`toggle-btn ${!isCreating ? 'active' : ''}`}
