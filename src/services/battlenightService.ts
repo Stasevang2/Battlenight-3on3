@@ -191,30 +191,42 @@ export const respondToInvite = async (
     status: accept ? 'accepted' : 'rejected',
   });
 
-  // Hent holdet
-  const teamsSnapshot = await getDocs(
+  // Hent holdet via Firestore document ID
+  const teamRef = doc(db, 'teams', teamId);
+  const teamSnapshot = await getDocs(
     query(collection(db, 'teams'), where('__name__', '==', teamId))
   );
 
-  if (!teamsSnapshot.empty) {
-    const team = teamsSnapshot.docs[0].data() as Team;
+  if (!teamSnapshot.empty) {
+    const team = teamSnapshot.docs[0].data() as Team;
 
-    // Opdater spiller status i holdet
+    // Opdater spiller status
     const updatedPlayers = team.players.map((p: TeamPlayer) =>
       p.userId === userId
         ? { ...p, status: accept ? 'accepted' as const : 'rejected' as const }
         : p
     );
-    const teamRef = doc(db, 'teams', teamId);
     await updateDoc(teamRef, { players: updatedPlayers });
 
-    // Tilføj spiller til hold chat hvis accepteret
     if (accept) {
+      // Find spiller navn
       const player = team.players.find((p: TeamPlayer) => p.userId === userId);
       if (player) {
+        // Tilføj til hold chat - brug teamId (Firestore document ID)
         const { addPlayerToTeamConversation } = await import('./messageService');
         await addPlayerToTeamConversation(teamId, userId, player.firstName);
-        console.log('Spiller tilføjet til hold chat efter accept:', player.firstName);
+        console.log('Spiller tilføjet til hold chat:', player.firstName, 'teamId:', teamId);
+      }
+
+      // Fjern fra individuel liste hvis tilmeldt
+      const individualQuery = query(
+        collection(db, 'individualSignups'),
+        where('battlenightId', '==', team.battlenightId),
+        where('userId', '==', userId)
+      );
+      const individualSnapshot = await getDocs(individualQuery);
+      for (const d of individualSnapshot.docs) {
+        await deleteDoc(d.ref);
       }
     }
   }
@@ -225,15 +237,32 @@ export const signupIndividual = async (
   userId: string,
   userName: string
 ) => {
-  // Tjek om spilleren allerede er tilmeldt
-  const existing = await getDocs(query(
+  // Tjek om spilleren allerede er tilmeldt som individuel
+  const existingIndividual = await getDocs(query(
     collection(db, 'individualSignups'),
     where('battlenightId', '==', battlenightId),
     where('userId', '==', userId)
   ));
 
-  if (!existing.empty) {
+  if (!existingIndividual.empty) {
     throw new Error('Du er allerede tilmeldt dette event som individuel spiller');
+  }
+
+  // Tjek om spilleren allerede er på et hold til dette event
+  const allTeams = await getDocs(query(
+    collection(db, 'teams'),
+    where('battlenightId', '==', battlenightId)
+  ));
+
+  const onTeam = allTeams.docs.some(d => {
+    const team = d.data() as Team;
+    return team.players.some((p: TeamPlayer) =>
+      p.userId === userId && p.status === 'accepted'
+    );
+  });
+
+  if (onTeam) {
+    throw new Error('Du er allerede tilmeldt dette event på et hold');
   }
 
   await addDoc(collection(db, 'individualSignups'), {

@@ -58,15 +58,17 @@ export const createTeamConversation = async (
   try {
     console.log('createTeamConversation kaldt med:', { teamId, teamName, playerIds });
 
-    const snapshot = await getDocs(collection(db, 'conversations'));
-    const existing = snapshot.docs.find(d => {
-      const data = d.data() as Conversation;
-      return data.type === 'team' && data.teamId === teamId;
-    });
+    // Søg efter eksisterende hold chat med dette teamId
+    const q = query(
+      collection(db, 'conversations'),
+      where('type', '==', 'team'),
+      where('teamId', '==', teamId)
+    );
+    const snapshot = await getDocs(q);
 
-    if (existing) {
-      console.log('Hold chat eksisterer allerede:', existing.id);
-      return existing.id;
+    if (!snapshot.empty) {
+      console.log('Hold chat eksisterer allerede:', snapshot.docs[0].id);
+      return snapshot.docs[0].id;
     }
 
     const docRef = await addDoc(collection(db, 'conversations'), {
@@ -84,7 +86,7 @@ export const createTeamConversation = async (
       createdAt: Timestamp.now(),
     });
 
-    console.log('Hold chat oprettet med ID:', docRef.id);
+    console.log('Hold chat oprettet med ID:', docRef.id, 'teamId:', teamId);
     return docRef.id;
   } catch (err) {
     console.error('Fejl i createTeamConversation:', err);
@@ -98,22 +100,32 @@ export const addPlayerToTeamConversation = async (
   userName: string
 ) => {
   try {
-    const snapshot = await getDocs(collection(db, 'conversations'));
-    const teamConv = snapshot.docs.find(d => {
-      const data = d.data() as Conversation;
-      return data.type === 'team' && data.teamId === teamId;
-    });
+    console.log('addPlayerToTeamConversation kaldt:', { teamId, userId, userName });
 
-    if (teamConv) {
-      const data = teamConv.data() as Conversation;
+    // Søg efter hold chat med dette teamId
+    const q = query(
+      collection(db, 'conversations'),
+      where('type', '==', 'team'),
+      where('teamId', '==', teamId)
+    );
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      const convDoc = snapshot.docs[0];
+      const data = convDoc.data() as Conversation;
+
       if (!data.participants.includes(userId)) {
-        await updateDoc(doc(db, 'conversations', teamConv.id), {
+        await updateDoc(doc(db, 'conversations', convDoc.id), {
           participants: [...data.participants, userId],
           participantNames: [...(data.participantNames || []), userName],
           playerNames: [...(data.playerNames || []), userName],
         });
-        console.log('Spiller tilføjet til hold chat:', userName);
+        console.log('✅ Spiller tilføjet til hold chat:', userName);
+      } else {
+        console.log('Spiller allerede i hold chat:', userName);
       }
+    } else {
+      console.log('❌ Ingen hold chat fundet for teamId:', teamId);
     }
   } catch (err) {
     console.error('Fejl i addPlayerToTeamConversation:', err);
@@ -127,18 +139,19 @@ export const getOrCreateAdminBroadcast = async (
   participantNames: string[]
 ): Promise<string> => {
   try {
-    const snapshot = await getDocs(collection(db, 'conversations'));
-    const existing = snapshot.docs.find(d => {
-      const data = d.data() as Conversation;
-      return data.type === 'admin' && data.battlenightId === battlenightId;
-    });
+    const q = query(
+      collection(db, 'conversations'),
+      where('type', '==', 'admin'),
+      where('battlenightId', '==', battlenightId)
+    );
+    const snapshot = await getDocs(q);
 
-    if (existing) {
-      await updateDoc(doc(db, 'conversations', existing.id), {
+    if (!snapshot.empty) {
+      await updateDoc(doc(db, 'conversations', snapshot.docs[0].id), {
         participants: participantIds,
         participantNames: participantNames,
       });
-      return existing.id;
+      return snapshot.docs[0].id;
     }
 
     const docRef = await addDoc(collection(db, 'conversations'), {
@@ -167,16 +180,17 @@ export const addPlayerToAdminBroadcast = async (
   userName: string
 ) => {
   try {
-    const snapshot = await getDocs(collection(db, 'conversations'));
-    const adminConv = snapshot.docs.find(d => {
-      const data = d.data() as Conversation;
-      return data.type === 'admin' && data.battlenightId === battlenightId;
-    });
+    const q = query(
+      collection(db, 'conversations'),
+      where('type', '==', 'admin'),
+      where('battlenightId', '==', battlenightId)
+    );
+    const snapshot = await getDocs(q);
 
-    if (adminConv) {
-      const data = adminConv.data() as Conversation;
+    if (!snapshot.empty) {
+      const data = snapshot.docs[0].data() as Conversation;
       if (!data.participants.includes(userId)) {
-        await updateDoc(doc(db, 'conversations', adminConv.id), {
+        await updateDoc(doc(db, 'conversations', snapshot.docs[0].id), {
           participants: [...data.participants, userId],
           participantNames: [...(data.participantNames || []), userName],
         });
