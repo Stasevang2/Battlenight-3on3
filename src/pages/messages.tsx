@@ -262,14 +262,6 @@ function Messages() {
     return null;
   };
 
-  // Tjek om admin kan sende i admin tråd (kun admin/superadmin)
-  const canSendInConversation = (conv: Conversation) => {
-    if (conv.type === 'admin') {
-      return currentUser?.role === 'admin' || currentUser?.role === 'superadmin';
-    }
-    return true;
-  };
-
   const filteredUsers = allUsers.filter(u =>
     u.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     u.userId.toLowerCase().includes(searchQuery.toLowerCase())
