@@ -6,10 +6,34 @@
   cursor: pointer;
 }
 
+.delete-conv-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 5px;
+}
+
+/* Ny chat panel */
 .new-chat-panel {
   background: rgba(0, 0, 0, 0.3);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding: 15px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.new-chat-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.new-chat-label {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 600;
 }
 
 .search-input {
@@ -21,7 +45,6 @@
   color: #ffffff;
   font-size: 0.9rem;
   outline: none;
-  margin-bottom: 10px;
 }
 
 .search-input::placeholder {
@@ -65,6 +88,35 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
+/* Admin broadcast knap */
+.broadcast-event-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 12px 15px;
+  background: rgba(204, 0, 0, 0.1);
+  border: 1px solid rgba(204, 0, 0, 0.3);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 3px;
+}
+
+.broadcast-event-btn:hover {
+  background: rgba(204, 0, 0, 0.2);
+}
+
+.broadcast-event-sub {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 400;
+}
+
+/* Kategori tabs */
 .message-categories {
   display: flex;
   background: rgba(0, 0, 0, 0.2);
@@ -114,34 +166,56 @@
   font-weight: 700;
 }
 
-.conversations-list {
+/* Samtale liste */
+.conversation-row {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 5px;
+  margin-bottom: 8px;
 }
 
 .conversation-card {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  padding: 15px;
+  padding: 12px 15px;
   cursor: pointer;
   transition: all 0.3s ease;
-  width: 100%;
   text-align: left;
 }
 
 .conversation-card:hover {
-  background: rgba(200, 169, 81, 0.1);
+  background: rgba(200, 169, 81, 0.08);
+  border-color: rgba(200, 169, 81, 0.2);
+}
+
+.conversation-card.has-unread {
   border-color: rgba(200, 169, 81, 0.3);
+  background: rgba(200, 169, 81, 0.05);
+}
+
+.conv-delete-btn {
+  background: rgba(255, 50, 50, 0.08);
+  border: 1px solid rgba(255, 50, 50, 0.15);
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.conv-delete-btn:hover {
+  background: rgba(255, 50, 50, 0.2);
 }
 
 .conv-avatar {
-  font-size: 1.8rem;
-  min-width: 45px;
+  font-size: 1.6rem;
+  min-width: 40px;
   text-align: center;
 }
 
@@ -154,7 +228,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .conv-name {
@@ -164,25 +238,25 @@
 }
 
 .conv-time {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: rgba(255, 255, 255, 0.4);
 }
 
+.conv-subtitle {
+  font-size: 0.75rem;
+  color: rgba(200, 169, 81, 0.7);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .conv-last-message {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: rgba(255, 255, 255, 0.5);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 4px;
-}
-
-.conv-event-tag {
-  font-size: 0.72rem;
-  color: rgba(200, 169, 81, 0.6);
-  background: rgba(200, 169, 81, 0.08);
-  padding: 2px 8px;
-  border-radius: 10px;
 }
 
 .unread-badge {
@@ -206,10 +280,56 @@
   line-height: 1.8;
 }
 
+.conversations-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Chat vindue */
 .chat-container {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 130px);
+}
+
+/* Admin broadcast info */
+.admin-broadcast-info {
+  background: rgba(204, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(204, 0, 0, 0.2);
+  padding: 10px 20px;
+}
+
+.admin-broadcast-info p {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 100, 100, 0.9);
+}
+
+.admin-broadcast-sub {
+  font-size: 0.75rem !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+  font-weight: 400 !important;
+  margin-top: 2px;
+}
+
+/* Hold chat info */
+.team-chat-info {
+  background: rgba(200, 169, 81, 0.08);
+  border-bottom: 1px solid rgba(200, 169, 81, 0.15);
+  padding: 10px 20px;
+}
+
+.team-chat-info p {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #c8a951;
+}
+
+.team-chat-players {
+  font-size: 0.75rem !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+  font-weight: 400 !important;
+  margin-top: 2px;
 }
 
 .messages-list {
@@ -218,7 +338,15 @@
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 12px;
+}
+
+.no-messages-yet {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.85rem;
+  padding: 30px 20px;
+  line-height: 1.5;
 }
 
 .message {
@@ -235,15 +363,15 @@
 }
 
 .message-from {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: rgba(255, 255, 255, 0.5);
   margin-bottom: 4px;
   padding-left: 5px;
 }
 
 .message-bubble {
-  max-width: 75%;
-  padding: 10px 15px;
+  max-width: 78%;
+  padding: 10px 14px;
   border-radius: 16px;
 }
 
@@ -260,26 +388,38 @@
 }
 
 .message-bubble p {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 500;
+  line-height: 1.4;
 }
 
 .message-time {
-  font-size: 0.7rem;
-  opacity: 0.7;
+  font-size: 0.68rem;
+  opacity: 0.6;
   display: block;
   margin-top: 4px;
   text-align: right;
 }
 
+/* Input sektion */
 .message-input-container {
-  display: flex;
-  gap: 10px;
-  padding: 15px 20px;
   background: rgba(0, 0, 0, 0.3);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 15px 15px;
   position: sticky;
   bottom: 70px;
+}
+
+.broadcast-sending-label {
+  font-size: 0.75rem;
+  color: rgba(255, 100, 100, 0.7);
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.message-input-row {
+  display: flex;
+  gap: 10px;
 }
 
 .message-input {
@@ -291,6 +431,10 @@
   color: #ffffff;
   font-size: 0.95rem;
   outline: none;
+}
+
+.message-input:focus {
+  border-color: #c8a951;
 }
 
 .message-input::placeholder {
@@ -309,4 +453,103 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+}
+
+.send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Svar til admin */
+.reply-to-admin-info {
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 15px 20px;
+  position: sticky;
+  bottom: 70px;
+  text-align: center;
+}
+
+.reply-to-admin-info p {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 10px;
+}
+
+.reply-to-admin-btn {
+  padding: 10px 20px;
+  background: rgba(200, 169, 81, 0.15);
+  border: 1px solid rgba(200, 169, 81, 0.3);
+  border-radius: 20px;
+  color: #c8a951;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Slet bekræftelse */
+.delete-confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+}
+
+.delete-confirm-box {
+  background: #1a3a5c;
+  border: 1px solid rgba(255, 50, 50, 0.3);
+  border-radius: 16px;
+  padding: 25px;
+  width: 100%;
+  max-width: 320px;
+  text-align: center;
+}
+
+.delete-confirm-box h3 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+
+.delete-confirm-box p {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 20px;
+}
+
+.delete-confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.delete-confirm-yes {
+  flex: 1;
+  padding: 12px;
+  background: rgba(255, 50, 50, 0.2);
+  border: 1px solid #ff6464;
+  border-radius: 8px;
+  color: #ff6464;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.delete-confirm-no {
+  flex: 1;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  cursor: pointer;
 }

@@ -128,91 +128,104 @@ function MyTeam() {
     }
   };
 
-  const handleCreateTeam = async () => {
-    if (!currentUser || !selectedBattlenight) return;
+const handleCreateTeam = async () => {
+  if (!currentUser || !selectedBattlenight) return;
 
-    const finalTeamName = teamName.trim() || `Team ${currentUser.firstName}`;
+  const finalTeamName = teamName.trim() || `Team ${currentUser.firstName}`;
 
-    const team: Omit<Team, 'id' | 'createdAt'> = {
-      battlenightId: selectedBattlenight.id!,
-      teamName: finalTeamName,
-      leaderId: currentUser.userId,
-      leaderName: currentUser.firstName,
-      players: [
-        {
-          userId: currentUser.userId,
-          firstName: currentUser.firstName,
-          playerNumber: currentUser.playerNumber,
-          club: currentUser.club,
-          birthYear: currentUser.birthYear,
-          status: 'accepted',
-        },
-        ...selectedPlayers.map((userId: string) => {
-          const user = allUsers.find(u => u.userId === userId);
-          if (user) {
-            return {
-              userId: user.userId,
-              firstName: user.firstName,
-              playerNumber: user.playerNumber,
-              club: user.club,
-              birthYear: user.birthYear,
-              status: 'pending' as const,
-            };
-          }
-          return {
-            userId,
-            firstName: userId,
-            playerNumber: 0,
-            club: '',
-            birthYear: 0,
-            status: 'placeholder' as const,
-            placeholderName: userId,
-          };
-        }),
-      ],
-      equipment,
-      paid: false,
-      present: null,
-      isIndividual: false,
-    };
-
-    try {
-      const teamId = await createTeam(team);
-
-      for (const userId of selectedPlayers) {
+  const team: Omit<Team, 'id' | 'createdAt'> = {
+    battlenightId: selectedBattlenight.id!,
+    teamName: finalTeamName,
+    leaderId: currentUser.userId,
+    leaderName: currentUser.firstName,
+    players: [
+      {
+        userId: currentUser.userId,
+        firstName: currentUser.firstName,
+        playerNumber: currentUser.playerNumber,
+        club: currentUser.club,
+        birthYear: currentUser.birthYear,
+        status: 'accepted',
+      },
+      ...selectedPlayers.map((userId: string) => {
         const user = allUsers.find(u => u.userId === userId);
         if (user) {
-          await createTeamInvite({
-            teamId,
-            teamName: finalTeamName,
-            battlenightId: selectedBattlenight.id!,
-            battlenightDate: selectedBattlenight.date,
-            fromUserId: currentUser.userId,
-            fromUserName: currentUser.firstName,
-            toUserId: userId,
-            status: 'pending',
-          });
-
-          await createNotification({
-            toUserId: userId,
-            type: 'team_invite',
-            title: '🏒 Du er inviteret til et hold!',
-            message: `${currentUser.firstName} inviterer dig til holdet "${finalTeamName}" til Battlenight ${selectedBattlenight.date}`,
-            data: { teamId },
-          });
+          return {
+            userId: user.userId,
+            firstName: user.firstName,
+            playerNumber: user.playerNumber,
+            club: user.club,
+            birthYear: user.birthYear,
+            status: 'pending' as const,
+          };
         }
-      }
-
-      setConfirmationText(`✅ Holdet "${finalTeamName}" er oprettet og tilmeldt ${selectedBattlenight.date}!`);
-      setShowConfirmation(true);
-      setFlowStep('overview');
-      setTeamName('');
-      setSelectedPlayers([]);
-      await loadData();
-    } catch (err) {
-      console.error(err);
-    }
+        return {
+          userId,
+          firstName: userId,
+          playerNumber: 0,
+          club: '',
+          birthYear: 0,
+          status: 'placeholder' as const,
+          placeholderName: userId,
+        };
+      }),
+    ],
+    equipment,
+    paid: false,
+    present: null,
+    isIndividual: false,
   };
+
+  try {
+    const teamId = await createTeam(team);
+
+    // Opret hold chat automatisk
+    const { createTeamConversation } = await import('../services/messageService');
+    const acceptedPlayers = team.players.filter(p => p.status === 'accepted');
+    await createTeamConversation(
+      teamId,
+      finalTeamName,
+      acceptedPlayers.map(p => p.userId),
+      acceptedPlayers.map(p => p.firstName),
+      selectedBattlenight.id!,
+      selectedBattlenight.date
+    );
+
+    // Send invites til valgte spillere
+    for (const userId of selectedPlayers) {
+      const user = allUsers.find(u => u.userId === userId);
+      if (user) {
+        await createTeamInvite({
+          teamId,
+          teamName: finalTeamName,
+          battlenightId: selectedBattlenight.id!,
+          battlenightDate: selectedBattlenight.date,
+          fromUserId: currentUser.userId,
+          fromUserName: currentUser.firstName,
+          toUserId: userId,
+          status: 'pending',
+        });
+
+        await createNotification({
+          toUserId: userId,
+          type: 'team_invite',
+          title: '🏒 Du er inviteret til et hold!',
+          message: `${currentUser.firstName} inviterer dig til holdet "${finalTeamName}" til Battlenight ${selectedBattlenight.date}`,
+          data: { teamId },
+        });
+      }
+    }
+
+    setConfirmationText(`✅ Holdet "${finalTeamName}" er oprettet og tilmeldt ${selectedBattlenight.date}!`);
+    setShowConfirmation(true);
+    setFlowStep('overview');
+    setTeamName('');
+    setSelectedPlayers([]);
+    await loadData();
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   const handleRespondToInvite = async (invite: TeamInvite, accept: boolean) => {
     if (!currentUser) return;
