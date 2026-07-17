@@ -5,7 +5,8 @@ import {
   getPendingAdminRequests,
   approveAdminRequest,
   rejectAdminRequest,
-  updateUser
+  updateUser,
+  deleteUserProfile,
 } from '../services/userService';
 import type { User } from '../services/userService';
 import {
@@ -27,7 +28,7 @@ import '../styles/superadminpanel.css';
 
 function SuperAdminPanel() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'requests' | 'events' | 'users' | 'settings' | 'menu'>('requests');
+  const [activeTab, setActiveTab] = useState<'requests' | 'events' | 'users' | 'settings' | 'menu' | 'rules'>('requests');
   const [users, setUsers] = useState<User[]>([]);
   const [pendingRequests, setPendingRequests] = useState<User[]>([]);
   const [battlenights, setBattlenights] = useState<Battlenight[]>([]);
@@ -42,6 +43,7 @@ function SuperAdminPanel() {
   const [notifyHours, setNotifyHours] = useState({ first: 48, second: 6 });
   const [leaderboardActive, setLeaderboardActive] = useState(true);
   const [showNewEventForm, setShowNewEventForm] = useState(false);
+  const [deleteUserConfirm, setDeleteUserConfirm] = useState<string | null>(null);
   const [newEvent, setNewEvent] = useState({
     date: '',
     time: '17:00 - 20:00',
@@ -76,10 +78,7 @@ function SuperAdminPanel() {
       setUsers(allUsers);
       setPendingRequests(pending);
       setBattlenights(events);
-      setMenuItems(items.length > 0 ? items : [
-        { id: '1', category: 'Mad', name: 'Hotdog', description: 'Klassisk hotdog', price: 25, emoji: '🌭', available: true } as MenuItem,
-        { id: '2', category: 'Drikke', name: 'Vand', description: 'Koldt vand', price: 10, emoji: '💧', available: true } as MenuItem,
-      ]);
+      setMenuItems(items);
     } catch (err) {
       console.error(err);
     }
@@ -123,6 +122,18 @@ function SuperAdminPanel() {
         message: 'Din anmodning om admin rolle blev afvist. Kontakt en Super Admin for mere info.',
       });
       setPendingRequests(prev => prev.filter(r => r.id !== user.id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteUser = async (user: User) => {
+    if (!user.id) return;
+    try {
+      await deleteUserProfile(user.userId, user.id);
+      setUsers(prev => prev.filter(u => u.id !== user.id));
+      setDeleteUserConfirm(null);
+      setExpandedUser(null);
     } catch (err) {
       console.error(err);
     }
@@ -233,6 +244,7 @@ function SuperAdminPanel() {
         category: item.category,
       });
       setEditingMenuItem(null);
+      await loadData();
     } catch (err) {
       console.error(err);
     }
@@ -280,6 +292,9 @@ function SuperAdminPanel() {
         </button>
         <button className={`admin-tab ${activeTab === 'menu' ? 'active' : ''}`} onClick={() => setActiveTab('menu')}>
           🍔 Menu
+        </button>
+        <button className={`admin-tab ${activeTab === 'rules' ? 'active' : ''}`} onClick={() => setActiveTab('rules')}>
+          📋 Regler
         </button>
         <button className={`admin-tab ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
           ⚙️
@@ -418,7 +433,11 @@ function SuperAdminPanel() {
                 {battlenights.map(event => (
                   <div key={event.id} className="sa-event-card">
                     <div className="sa-event-header">
-                      <h3 className="sa-event-date">{event.date}</h3>
+                      <h3 className="sa-event-date">
+                        {new Date(event.date).toLocaleDateString('da-DK', {
+                          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                        })}
+                      </h3>
                       <button className="delete-btn" onClick={() => handleDeleteEvent(event.id!)}>🗑️</button>
                     </div>
                     <p className="sa-event-time">⏰ {event.time}</p>
@@ -486,6 +505,8 @@ function SuperAdminPanel() {
 
                     {expandedUser === user.id && (
                       <div className="sa-user-expanded">
+
+                        {/* Password */}
                         <div className="sa-section">
                           <h4>🔑 Password</h4>
                           <div className="password-row">
@@ -514,6 +535,7 @@ function SuperAdminPanel() {
                           </div>
                         </div>
 
+                        {/* Rediger */}
                         <div className="sa-section">
                           <div className="sa-section-header">
                             <h4>✏️ Brugerdata</h4>
@@ -585,6 +607,7 @@ function SuperAdminPanel() {
                           </div>
                         </div>
 
+                        {/* Saldo */}
                         <div className="sa-section">
                           <h4>💰 Saldo: <span className={(user.balance || 0) < 0 ? 'negative' : 'positive'}>{user.balance || 0} kr</span></h4>
                           <div className="balance-quick-btns">
@@ -610,6 +633,38 @@ function SuperAdminPanel() {
                             <button className="balance-btn subtract" onClick={() => applyCustomAmount(user, 'subtract')}>- Træk</button>
                           </div>
                         </div>
+
+                        {/* Slet bruger */}
+                        <div className="sa-section">
+                          {deleteUserConfirm === user.id ? (
+                            <div className="delete-user-confirm">
+                              <p>⚠️ Slet <strong>{user.firstName}</strong>?</p>
+                              <p className="delete-user-note">Alle data slettes permanent</p>
+                              <div className="delete-user-actions">
+                                <button
+                                  className="delete-user-yes"
+                                  onClick={() => handleDeleteUser(user)}
+                                >
+                                  🗑️ Ja, slet
+                                </button>
+                                <button
+                                  className="delete-user-no"
+                                  onClick={() => setDeleteUserConfirm(null)}
+                                >
+                                  ✕ Annuller
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              className="delete-user-btn"
+                              onClick={() => setDeleteUserConfirm(user.id!)}
+                            >
+                              🗑️ Slet bruger
+                            </button>
+                          )}
+                        </div>
+
                       </div>
                     )}
                   </div>
@@ -684,91 +739,108 @@ function SuperAdminPanel() {
               </button>
             </div>
 
-            <div className="menu-items-list">
-              {menuItems.map(item => (
-                <div key={item.id} className={`menu-item-admin ${!item.available ? 'unavailable' : ''}`}>
-                  {editingMenuItem === item.id ? (
-                    <div className="menu-item-edit">
-                      <div className="menu-edit-fields">
-                        <input
-                          type="text"
-                          className="sa-input"
-                          value={item.emoji}
-                          maxLength={2}
-                          onChange={(e) => setMenuItems(prev => prev.map(i =>
-                            i.id === item.id ? { ...i, emoji: e.target.value } : i
-                          ))}
-                        />
-                        <input
-                          type="text"
-                          className="sa-input"
-                          value={item.name}
-                          onChange={(e) => setMenuItems(prev => prev.map(i =>
-                            i.id === item.id ? { ...i, name: e.target.value } : i
-                          ))}
-                        />
-                        <input
-                          type="text"
-                          className="sa-input"
-                          value={item.description || ''}
-                          placeholder="Beskrivelse"
-                          onChange={(e) => setMenuItems(prev => prev.map(i =>
-                            i.id === item.id ? { ...i, description: e.target.value } : i
-                          ))}
-                        />
-                        <input
-                          type="number"
-                          className="sa-input"
-                          value={item.price}
-                          onChange={(e) => setMenuItems(prev => prev.map(i =>
-                            i.id === item.id ? { ...i, price: Number(e.target.value) } : i
-                          ))}
-                        />
+            {isLoading ? (
+              <p className="loading-text">⏳ Henter menu...</p>
+            ) : menuItems.length === 0 ? (
+              <div className="no-requests">
+                <p>Ingen menuvarer endnu</p>
+              </div>
+            ) : (
+              <div className="menu-items-list">
+                {menuItems.map(item => (
+                  <div key={item.id} className={`menu-item-admin ${!item.available ? 'unavailable' : ''}`}>
+                    {editingMenuItem === item.id ? (
+                      <div className="menu-item-edit">
+                        <div className="menu-edit-fields">
+                          <input
+                            type="text"
+                            className="sa-input"
+                            value={item.emoji}
+                            maxLength={2}
+                            onChange={(e) => setMenuItems(prev => prev.map(i =>
+                              i.id === item.id ? { ...i, emoji: e.target.value } : i
+                            ))}
+                          />
+                          <input
+                            type="text"
+                            className="sa-input"
+                            value={item.name}
+                            onChange={(e) => setMenuItems(prev => prev.map(i =>
+                              i.id === item.id ? { ...i, name: e.target.value } : i
+                            ))}
+                          />
+                          <input
+                            type="text"
+                            className="sa-input"
+                            value={item.description || ''}
+                            placeholder="Beskrivelse"
+                            onChange={(e) => setMenuItems(prev => prev.map(i =>
+                              i.id === item.id ? { ...i, description: e.target.value } : i
+                            ))}
+                          />
+                          <input
+                            type="number"
+                            className="sa-input"
+                            value={item.price}
+                            onChange={(e) => setMenuItems(prev => prev.map(i =>
+                              i.id === item.id ? { ...i, price: Number(e.target.value) } : i
+                            ))}
+                          />
+                        </div>
+                        <div className="menu-edit-actions">
+                          <button className="save-menu-btn" onClick={() => handleSaveMenuItem(item)}>
+                            💾 Gem
+                          </button>
+                          <button className="cancel-menu-btn" onClick={() => setEditingMenuItem(null)}>
+                            ✕ Annuller
+                          </button>
+                        </div>
                       </div>
-                      <div className="menu-edit-actions">
-                        <button className="save-menu-btn" onClick={() => handleSaveMenuItem(item)}>
-                          💾 Gem
-                        </button>
-                        <button className="cancel-menu-btn" onClick={() => setEditingMenuItem(null)}>
-                          ✕ Annuller
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <span className="item-emoji">{item.emoji}</span>
-                      <div className="item-info">
-                        <span className="item-name">{item.name}</span>
-                        <span className="item-category">{item.category} · {item.price} kr</span>
-                        {item.description && (
-                          <span className="item-desc">{item.description}</span>
-                        )}
-                      </div>
-                      <div className="item-admin-actions">
-                        <button
-                          className="edit-menu-btn"
-                          onClick={() => setEditingMenuItem(item.id!)}
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          className="toggle-available-btn"
-                          onClick={() => handleToggleMenuItem(item)}
-                        >
-                          {item.available ? '✅' : '❌'}
-                        </button>
-                        <button
-                          className="delete-item-btn"
-                          onClick={() => handleDeleteMenuItem(item.id!)}
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))}
+                    ) : (
+                      <>
+                        <span className="item-emoji">{item.emoji}</span>
+                        <div className="item-info">
+                          <span className="item-name">{item.name}</span>
+                          <span className="item-category">{item.category} · {item.price} kr</span>
+                          {item.description && (
+                            <span className="item-desc">{item.description}</span>
+                          )}
+                        </div>
+                        <div className="item-admin-actions">
+                          <button className="edit-menu-btn" onClick={() => setEditingMenuItem(item.id!)}>
+                            ✏️
+                          </button>
+                          <button className="toggle-available-btn" onClick={() => handleToggleMenuItem(item)}>
+                            {item.available ? '✅' : '❌'}
+                          </button>
+                          <button className="delete-item-btn" onClick={() => handleDeleteMenuItem(item.id!)}>
+                            🗑️
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* REGLER TAB */}
+        {activeTab === 'rules' && (
+          <div>
+            <h2 className="section-title">📋 Regler</h2>
+            <div className="rules-info-card">
+              <p>Reglerne redigeres direkte på regler siden.</p>
+              <p>Som Super Admin kan du klikke på ✏️ ikonet ved siden af hver regel for at redigere den.</p>
             </div>
+            <button
+              className="add-btn full-width"
+              onClick={() => navigate('/rules')}
+              style={{ marginTop: '15px' }}
+            >
+              📋 Gå til regler siden
+            </button>
           </div>
         )}
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { useAuth } from '../context/AuthContext';
-import { requestAdminRole, updateUser } from '../services/userService';
+import { requestAdminRole, updateUser, deleteUserProfile } from '../services/userService';
 import { getFoodOrdersForUser } from '../services/menuService';
 import { getNotificationsForUser, markAllAsRead } from '../services/notificationService';
 import type { FoodOrder } from '../services/menuService';
@@ -15,6 +15,7 @@ function Profile() {
   const [showBalanceHistory, setShowBalanceHistory] = useState(false);
   const [showFoodOrders, setShowFoodOrders] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [foodOrders, setFoodOrders] = useState<FoodOrder[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [contact, setContact] = useState({
@@ -25,6 +26,7 @@ function Profile() {
   const [saved, setSaved] = useState(false);
   const [adminRequestSent, setAdminRequestSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -95,6 +97,19 @@ function Profile() {
       navigate('/myteam');
     } else if (notif.type === 'admin_request') {
       navigate('/superadmin');
+    }
+  };
+
+  const handleDeleteProfile = async () => {
+    if (!currentUser?.id) return;
+    setIsDeleting(true);
+    try {
+      await deleteUserProfile(currentUser.userId, currentUser.id);
+      setCurrentUser(null);
+      navigate('/');
+    } catch (err) {
+      console.error(err);
+      setIsDeleting(false);
     }
   };
 
@@ -378,6 +393,39 @@ function Profile() {
         }}>
           🚪 Log ud
         </button>
+
+        {/* Slet profil */}
+        {showDeleteConfirm ? (
+          <div className="delete-profile-confirm">
+            <p>⚠️ Er du sikker på at du vil slette din profil?</p>
+            <p className="delete-profile-note">
+              Dette kan ikke fortrydes. Alle dine data, hold og beskeder slettes permanent.
+            </p>
+            <div className="delete-profile-actions">
+              <button
+                className="delete-profile-yes"
+                onClick={handleDeleteProfile}
+                disabled={isDeleting}
+              >
+                {isDeleting ? '⏳ Sletter...' : '🗑️ Ja, slet min profil'}
+              </button>
+              <button
+                className="delete-profile-no"
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                ✕ Annuller
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            className="delete-profile-btn"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            🗑️ Slet min profil
+          </button>
+        )}
+
       </div>
 
       <BottomNav />

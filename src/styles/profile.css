@@ -531,3 +531,77 @@
   color: #c8a951;
   flex-shrink: 0;
 }
+
+.delete-profile-btn {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid rgba(255, 50, 50, 0.2);
+  border-radius: 10px;
+  color: rgba(255, 100, 100, 0.5);
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-bottom: 30px;
+  transition: all 0.2s ease;
+}
+
+.delete-profile-btn:hover {
+  border-color: rgba(255, 50, 50, 0.4);
+  color: rgba(255, 100, 100, 0.8);
+}
+
+.delete-profile-confirm {
+  background: rgba(255, 50, 50, 0.08);
+  border: 1px solid rgba(255, 50, 50, 0.3);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.delete-profile-confirm p {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ff6464;
+  margin-bottom: 8px;
+}
+
+.delete-profile-note {
+  font-size: 0.78rem !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+  font-weight: 400 !important;
+  margin-bottom: 15px !important;
+}
+
+.delete-profile-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.delete-profile-yes {
+  flex: 1;
+  padding: 12px;
+  background: rgba(255, 50, 50, 0.2);
+  border: 1px solid #ff6464;
+  border-radius: 8px;
+  color: #ff6464;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.delete-profile-yes:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.delete-profile-no {
+  flex: 1;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  cursor: pointer;
+}

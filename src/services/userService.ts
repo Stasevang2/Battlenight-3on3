@@ -4,6 +4,7 @@ import {
   getDocs,
   addDoc,
   updateDoc,
+  deleteDoc,
   query,
   where,
   Timestamp
@@ -135,4 +136,98 @@ export const updateUserBalance = async (userId: string, newBalance: number) => {
 export const updateUser = async (id: string, data: Partial<User>) => {
   const docRef = doc(db, 'users', id);
   await updateDoc(docRef, { ...data });
+};
+
+export const deleteUserProfile = async (userId: string, userDocId: string) => {
+  try {
+    // 1. Slet bruger dokument
+    await deleteDoc(doc(db, 'users', userDocId));
+
+    // 2. Fjern fra hold
+    const teamsSnapshot = await getDocs(collection(db, 'teams'));
+    for (const teamDoc of teamsSnapshot.docs) {
+      const team = teamDoc.data();
+      const players = team.players || [];
+      const isInTeam = players.some((p: any) => p.userId === userId);
+
+      if (isInTeam) {
+        const updatedPlayers = players.filter((p: any) => p.userId !== userId);
+        if (updatedPlayers.length === 0) {
+          await deleteDoc(teamDoc.ref);
+        } else {
+          // Hvis holdleder slettes - giv ny holdleder
+          if (team.leaderId === userId) {
+            const newLeader = updatedPlayers.find((p: any) => p.status === 'accepted') || updatedPlayers[0];
+            await updateDoc(teamDoc.ref, {
+              players: updatedPlayers,
+              leaderId: newLeader.userId,
+              leaderName: newLeader.firstName,
+            });
+          } else {
+            await updateDoc(teamDoc.ref, { players: updatedPlayers });
+          }
+        }
+      }
+    }
+
+    // 3. Slet ventende invitationer
+    const invitesSentSnapshot = await getDocs(query(
+      collection(db, 'teamInvites'),
+      where('fromUserId', '==', userId)
+    ));
+    for (const d of invitesSentSnapshot.docs) {
+      await deleteDoc(d.ref);
+    }
+
+    const invitesReceivedSnapshot = await getDocs(query(
+      collection(db, 'teamInvites'),
+      where('toUserId', '==', userId)
+    ));
+    for (const d of invitesReceivedSnapshot.docs) {
+      await deleteDoc(d.ref);
+    }
+
+    // 4. Slet notifikationer
+    const notifsSnapshot = await getDocs(query(
+      collection(db, 'notifications'),
+      where('toUserId', '==', userId)
+    ));
+    for (const d of notifsSnapshot.docs) {
+      await deleteDoc(d.ref);
+    }
+
+    // 5. Fjern fra individuel tilmeldinger
+    const individualSnapshot = await getDocs(query(
+      collection(db, 'individualSignups'),
+      where('userId', '==', userId)
+    ));
+    for (const d of individualSnapshot.docs) {
+      await deleteDoc(d.ref);
+    }
+
+    // 6. Fjern fra conversations participants
+    const convsSnapshot = await getDocs(collection(db, 'conversations'));
+    for (const convDoc of convsSnapshot.docs) {
+      const conv = convDoc.data();
+      if (conv.participants && conv.participants.includes(userId)) {
+        const updatedParticipants = conv.participants.filter((p: string) => p !== userId);
+        const updatedNames = (conv.participantNames || []).filter((_: string, i: number) =>
+          conv.participants[i] !== userId
+        );
+        if (updatedParticipants.length === 0) {
+          await deleteDoc(convDoc.ref);
+        } else {
+          await updateDoc(convDoc.ref, {
+            participants: updatedParticipants,
+            participantNames: updatedNames,
+          });
+        }
+      }
+    }
+
+    console.log('✅ Bruger slettet:', userId);
+  } catch (err) {
+    console.error('Fejl ved sletning af bruger:', err);
+    throw err;
+  }
 };

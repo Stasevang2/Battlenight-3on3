@@ -767,3 +767,70 @@ input:checked + .toggle-slider:before {
   font-size: 0.72rem;
   color: rgba(255, 255, 255, 0.3);
 }
+
+.delete-user-btn {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid rgba(255, 50, 50, 0.2);
+  border-radius: 8px;
+  color: rgba(255, 100, 100, 0.5);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-user-btn:hover {
+  border-color: rgba(255, 50, 50, 0.4);
+  color: rgba(255, 100, 100, 0.8);
+}
+
+.delete-user-confirm {
+  background: rgba(255, 50, 50, 0.08);
+  border: 1px solid rgba(255, 50, 50, 0.3);
+  border-radius: 10px;
+  padding: 15px;
+  text-align: center;
+}
+
+.delete-user-confirm p {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ff6464;
+  margin-bottom: 5px;
+}
+
+.delete-user-note {
+  font-size: 0.75rem !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+  font-weight: 400 !important;
+  margin-bottom: 12px !important;
+}
+
+.delete-user-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.delete-user-yes {
+  flex: 1;
+  padding: 10px;
+  background: rgba(255, 50, 50, 0.2);
+  border: 1px solid #ff6464;
+  border-radius: 8px;
+  color: #ff6464;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.delete-user-no {
+  flex: 1;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
