@@ -73,8 +73,6 @@ export type TeamInvite = {
 export const getBattlenights = async (): Promise<Battlenight[]> => {
   const snapshot = await getDocs(collection(db, 'battlenights'));
   const events = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Battlenight));
-  
-  // Sorter efter dato - nærmeste først
   return events.sort((a, b) => {
     return new Date(a.date).getTime() - new Date(b.date).getTime();
   });
@@ -188,49 +186,36 @@ export const respondToInvite = async (
   userId: string,
   accept: boolean
 ) => {
-  // Opdater invite status
   const inviteRef = doc(db, 'teamInvites', inviteId);
   await updateDoc(inviteRef, {
     status: accept ? 'accepted' : 'rejected',
   });
 
-  // Hent holdet via Firestore document ID
-  const teamRef = doc(db, 'teams', teamId);
-  const teamSnapshot = await getDocs(
+  const teamsSnapshot = await getDocs(
     query(collection(db, 'teams'), where('__name__', '==', teamId))
   );
 
-  if (!teamSnapshot.empty) {
-    const team = teamSnapshot.docs[0].data() as Team;
+  if (!teamsSnapshot.empty) {
+    const team = teamsSnapshot.docs[0].data() as Team;
 
-    // Opdater spiller status
     const updatedPlayers = team.players.map((p: TeamPlayer) =>
       p.userId === userId
         ? { ...p, status: accept ? 'accepted' as const : 'rejected' as const }
         : p
     );
+    const teamRef = doc(db, 'teams', teamId);
     await updateDoc(teamRef, { players: updatedPlayers });
 
     if (accept) {
-      // Find spiller navn
+      // Tilføj til hold chat
       const player = team.players.find((p: TeamPlayer) => p.userId === userId);
       if (player) {
-        // Tilføj til hold chat - brug teamId (Firestore document ID)
         const { addPlayerToTeamConversation } = await import('./messageService');
         await addPlayerToTeamConversation(teamId, userId, player.firstName);
-        console.log('Spiller tilføjet til hold chat:', player.firstName, 'teamId:', teamId);
       }
 
-      // Fjern fra individuel liste hvis tilmeldt
-      const individualQuery = query(
-        collection(db, 'individualSignups'),
-        where('battlenightId', '==', team.battlenightId),
-        where('userId', '==', userId)
-      );
-      const individualSnapshot = await getDocs(individualQuery);
-      for (const d of individualSnapshot.docs) {
-        await deleteDoc(d.ref);
-      }
+      // Fjern fra individuel liste
+      await removeIndividualSignup(team.battlenightId, userId);
     }
   }
 };
@@ -283,4 +268,19 @@ export const getIndividualSignups = async (battlenightId: string) => {
   );
   const snapshot = await getDocs(q);
   return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+};
+
+export const removeIndividualSignup = async (
+  battlenightId: string,
+  userId: string
+) => {
+  const q = query(
+    collection(db, 'individualSignups'),
+    where('battlenightId', '==', battlenightId),
+    where('userId', '==', userId)
+  );
+  const snapshot = await getDocs(q);
+  for (const d of snapshot.docs) {
+    await deleteDoc(d.ref);
+  }
 };

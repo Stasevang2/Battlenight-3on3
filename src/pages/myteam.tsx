@@ -11,6 +11,7 @@ import {
   createTeamInvite,
   getInvitesForUser,
   respondToInvite,
+  removeIndividualSignup,
 } from '../services/battlenightService';
 import type { Battlenight, Team, TeamInvite, TeamPlayer } from '../services/battlenightService';
 import { getAllUsers } from '../services/userService';
@@ -116,6 +117,7 @@ function MyTeam() {
     try {
       const teamId = await createTeam(team);
 
+      // Opret hold chat
       await createTeamConversation(
         teamId,
         existingTeam.teamName,
@@ -125,7 +127,10 @@ function MyTeam() {
         selectedBattlenight.date
       );
 
-      setConfirmationText(`✅ Holdet "${existingTeam.teamName}" er tilmeldt ${selectedBattlenight.date}! Inviter dine spillere.`);
+      // Fjern fra individuel liste
+      await removeIndividualSignup(selectedBattlenight.id!, currentUser.userId);
+
+      setConfirmationText(`✅ Holdet "${existingTeam.teamName}" er tilmeldt ${selectedBattlenight.date}!`);
       setShowConfirmation(true);
       setFlowStep('overview');
       await loadData();
@@ -185,7 +190,7 @@ function MyTeam() {
     try {
       const teamId = await createTeam(team);
 
-      // Opret hold chat automatisk med holdleder
+      // Opret hold chat automatisk
       const acceptedPlayers = team.players.filter(p => p.status === 'accepted');
       await createTeamConversation(
         teamId,
@@ -195,6 +200,9 @@ function MyTeam() {
         selectedBattlenight.id!,
         selectedBattlenight.date
       );
+
+      // Fjern holdleder fra individuel liste hvis tilmeldt
+      await removeIndividualSignup(selectedBattlenight.id!, currentUser.userId);
 
       // Send invites til valgte spillere
       for (const userId of selectedPlayers) {
@@ -388,7 +396,6 @@ function MyTeam() {
         {/* ============ OVERVIEW ============ */}
         {flowStep === 'overview' && (
           <>
-            {/* Ventende invitationer */}
             {myInvites.length > 0 && (
               <div className="invites-section">
                 <h2 className="section-title">
@@ -419,13 +426,14 @@ function MyTeam() {
               <p className="loading-text">⏳ Henter hold...</p>
             ) : (
               <>
-                {/* Tilmeld knap */}
                 {battlenights.length > 0 && (
                   <div className="signup-section">
                     <h2 className="section-title">🏒 Næste Battlenight</h2>
                     {battlenights.slice(0, 1).map(bn => (
                       <div key={bn.id} className="next-battlenight-card">
-                        <h3>{bn.date}</h3>
+                        <h3>{new Date(bn.date).toLocaleDateString('da-DK', {
+                          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                        })}</h3>
                         <p>⏰ {bn.time} · 💰 {bn.price} kr pr. spiller</p>
                         <button
                           className="signup-btn"
@@ -449,7 +457,6 @@ function MyTeam() {
                   </div>
                 )}
 
-                {/* Mine hold */}
                 {myTeams.length > 0 && (
                   <>
                     <h2 className="section-title" style={{ marginTop: '20px' }}>👥 Mine Hold</h2>
@@ -462,7 +469,13 @@ function MyTeam() {
                           <div className="team-header">
                             <div>
                               <h2 className="team-name">🏒 {team.teamName}</h2>
-                              <p className="team-event">📅 {battlenight?.date || 'Ukendt event'}</p>
+                              <p className="team-event">
+                                📅 {battlenight
+                                  ? new Date(battlenight.date).toLocaleDateString('da-DK', {
+                                      weekday: 'long', day: 'numeric', month: 'long'
+                                    })
+                                  : 'Ukendt event'}
+                              </p>
                             </div>
                             <span className={`team-role-badge ${isLeader ? 'leader' : 'player'}`}>
                               {isLeader ? '👑 Holdleder' : '👤 Spiller'}
@@ -632,7 +645,11 @@ function MyTeam() {
           <div>
             <div className="chosen-event-card">
               <p className="chosen-event-label">Du tilmelder dig:</p>
-              <h3 className="chosen-event-date">{selectedBattlenight.date}</h3>
+              <h3 className="chosen-event-date">
+                {new Date(selectedBattlenight.date).toLocaleDateString('da-DK', {
+                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                })}
+              </h3>
               <p className="chosen-event-details">⏰ {selectedBattlenight.time} · 💰 {selectedBattlenight.price} kr</p>
             </div>
 
@@ -682,7 +699,11 @@ function MyTeam() {
           <div>
             <div className="chosen-event-card">
               <p className="chosen-event-label">Battlenight:</p>
-              <h3 className="chosen-event-date">{selectedBattlenight.date}</h3>
+              <h3 className="chosen-event-date">
+                {new Date(selectedBattlenight.date).toLocaleDateString('da-DK', {
+                  weekday: 'long', day: 'numeric', month: 'long'
+                })}
+              </h3>
             </div>
 
             <h2 className="section-title">Vælg dit hold</h2>
@@ -730,7 +751,11 @@ function MyTeam() {
           <div>
             <div className="chosen-event-card">
               <p className="chosen-event-label">Battlenight:</p>
-              <h3 className="chosen-event-date">{selectedBattlenight.date}</h3>
+              <h3 className="chosen-event-date">
+                {new Date(selectedBattlenight.date).toLocaleDateString('da-DK', {
+                  weekday: 'long', day: 'numeric', month: 'long'
+                })}
+              </h3>
             </div>
 
             <div className="form-section">
@@ -871,7 +896,11 @@ function MyTeam() {
           <div>
             <div className="chosen-event-card">
               <p className="chosen-event-label">Du tilmelder dig som individuel spiller:</p>
-              <h3 className="chosen-event-date">{selectedBattlenight.date}</h3>
+              <h3 className="chosen-event-date">
+                {new Date(selectedBattlenight.date).toLocaleDateString('da-DK', {
+                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                })}
+              </h3>
               <p className="chosen-event-details">⏰ {selectedBattlenight.time} · 💰 {selectedBattlenight.price} kr</p>
             </div>
 
@@ -893,13 +922,14 @@ function MyTeam() {
                   try {
                     const { signupIndividual } = await import('../services/battlenightService');
                     await signupIndividual(selectedBattlenight.id!, currentUser.userId, currentUser.firstName);
-                    setConfirmationText(`✅ Du er tilmeldt ${selectedBattlenight.date} som individuel spiller!`);
+                    setConfirmationText(`✅ Du er tilmeldt som individuel spiller!`);
                     setShowConfirmation(true);
                     setFlowStep('overview');
                     await loadData();
                   } catch (err: any) {
                     setConfirmationText(err.message || 'Der skete en fejl');
                     setShowConfirmation(true);
+                    setTimeout(() => setShowConfirmation(false), 3000);
                   }
                 }}
               >
