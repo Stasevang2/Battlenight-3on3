@@ -167,7 +167,7 @@ function Calendar() {
               const takenShifts = shifts.filter(s => s.taken).length;
               const isRegisteredIndividual = registeredIndividual.includes(event.id!) ||
                 individuals.some((i: any) => i.userId === currentUser?.userId);
-              const isExpanded = selectedEvent === event.id;
+              
 
               return (
                 <div key={event.id} className={`event-card ${event.status}`}>
