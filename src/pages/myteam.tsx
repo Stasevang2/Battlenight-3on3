@@ -11,9 +11,11 @@ import {
   createTeamInvite,
   getInvitesForUser,
   respondToInvite,
+  createTeamConversation,
 } from '../services/battlenightService';
 import type { Battlenight, Team, TeamInvite, TeamPlayer } from '../services/battlenightService';
 import { getAllUsers } from '../services/userService';
+import { createTeamConversation } from '../services/messageService';
 import type { User } from '../services/userService';
 import { createNotification } from '../services/notificationService';
 import '../styles/myteam.css';
@@ -180,7 +182,6 @@ const handleCreateTeam = async () => {
     const teamId = await createTeam(team);
 
     // Opret hold chat automatisk
-    const { createTeamConversation } = await import('../services/messageService');
     const acceptedPlayers = team.players.filter(p => p.status === 'accepted');
     await createTeamConversation(
       teamId,
