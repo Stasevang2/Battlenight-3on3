@@ -58,7 +58,6 @@ export const createTeamConversation = async (
   try {
     console.log('createTeamConversation kaldt med:', { teamId, teamName, playerIds });
 
-    // Tjek om der allerede er en hold chat for dette hold
     const snapshot = await getDocs(collection(db, 'conversations'));
     const existing = snapshot.docs.find(d => {
       const data = d.data() as Conversation;
@@ -93,6 +92,34 @@ export const createTeamConversation = async (
   }
 };
 
+export const addPlayerToTeamConversation = async (
+  teamId: string,
+  userId: string,
+  userName: string
+) => {
+  try {
+    const snapshot = await getDocs(collection(db, 'conversations'));
+    const teamConv = snapshot.docs.find(d => {
+      const data = d.data() as Conversation;
+      return data.type === 'team' && data.teamId === teamId;
+    });
+
+    if (teamConv) {
+      const data = teamConv.data() as Conversation;
+      if (!data.participants.includes(userId)) {
+        await updateDoc(doc(db, 'conversations', teamConv.id), {
+          participants: [...data.participants, userId],
+          participantNames: [...(data.participantNames || []), userName],
+          playerNames: [...(data.playerNames || []), userName],
+        });
+        console.log('Spiller tilføjet til hold chat:', userName);
+      }
+    }
+  } catch (err) {
+    console.error('Fejl i addPlayerToTeamConversation:', err);
+  }
+};
+
 export const getOrCreateAdminBroadcast = async (
   battlenightId: string,
   battlenightDate: string,
@@ -107,7 +134,6 @@ export const getOrCreateAdminBroadcast = async (
     });
 
     if (existing) {
-      // Opdater participants hvis nye spillere er tilmeldt
       await updateDoc(doc(db, 'conversations', existing.id), {
         participants: participantIds,
         participantNames: participantNames,

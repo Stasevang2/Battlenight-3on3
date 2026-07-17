@@ -115,9 +115,7 @@ function MyTeam() {
 
     try {
       const teamId = await createTeam(team);
-      console.log('Team oprettet med ID:', teamId);
-      
-      // Opret hold chat automatisk
+
       await createTeamConversation(
         teamId,
         existingTeam.teamName,
@@ -187,7 +185,7 @@ function MyTeam() {
     try {
       const teamId = await createTeam(team);
 
-      // Opret hold chat automatisk
+      // Opret hold chat automatisk med holdleder
       const acceptedPlayers = team.players.filter(p => p.status === 'accepted');
       await createTeamConversation(
         teamId,
@@ -390,6 +388,7 @@ function MyTeam() {
         {/* ============ OVERVIEW ============ */}
         {flowStep === 'overview' && (
           <>
+            {/* Ventende invitationer */}
             {myInvites.length > 0 && (
               <div className="invites-section">
                 <h2 className="section-title">
@@ -420,6 +419,7 @@ function MyTeam() {
               <p className="loading-text">⏳ Henter hold...</p>
             ) : (
               <>
+                {/* Tilmeld knap */}
                 {battlenights.length > 0 && (
                   <div className="signup-section">
                     <h2 className="section-title">🏒 Næste Battlenight</h2>
@@ -449,6 +449,7 @@ function MyTeam() {
                   </div>
                 )}
 
+                {/* Mine hold */}
                 {myTeams.length > 0 && (
                   <>
                     <h2 className="section-title" style={{ marginTop: '20px' }}>👥 Mine Hold</h2>
@@ -468,6 +469,15 @@ function MyTeam() {
                             </span>
                           </div>
 
+                          {/* Hold chat knap */}
+                          <button
+                            className="team-chat-btn"
+                            onClick={() => navigate('/messages')}
+                          >
+                            💬 Hold Chat - {team.teamName}
+                          </button>
+
+                          {/* Udstyr */}
                           <div className="equipment-row">
                             <span className={`equipment-tag ${team.equipment}`}>
                               {team.equipment === 'full' ? '🏒 Fuldt udstyr' : '🧤 Basis udstyr'}
@@ -484,6 +494,7 @@ function MyTeam() {
                             )}
                           </div>
 
+                          {/* Spillere */}
                           <div className="players-section">
                             <h3 className="players-title">👥 Spillere ({team.players.length})</h3>
                             <div className="players-list">
@@ -510,6 +521,7 @@ function MyTeam() {
                             </div>
                           </div>
 
+                          {/* Inviter spillere - kun holdleder */}
                           {isLeader && (
                             <div className="invite-players-section">
                               <h3 className="players-title">➕ Inviter spiller</h3>
@@ -596,6 +608,7 @@ function MyTeam() {
                             </div>
                           )}
 
+                          {/* Handlinger */}
                           <div className="team-actions">
                             <button className="action-btn danger" onClick={() => handleLeaveTeam(team)}>
                               {isLeader ? '⚠️ Meld afbud som holdleder' : '⚠️ Forlad holdet'}
@@ -877,12 +890,17 @@ function MyTeam() {
               <button
                 className="action-btn primary"
                 onClick={async () => {
-                  const { signupIndividual } = await import('../services/battlenightService');
-                  await signupIndividual(selectedBattlenight.id!, currentUser.userId, currentUser.firstName);
-                  setConfirmationText(`✅ Du er tilmeldt ${selectedBattlenight.date} som individuel spiller!`);
-                  setShowConfirmation(true);
-                  setFlowStep('overview');
-                  await loadData();
+                  try {
+                    const { signupIndividual } = await import('../services/battlenightService');
+                    await signupIndividual(selectedBattlenight.id!, currentUser.userId, currentUser.firstName);
+                    setConfirmationText(`✅ Du er tilmeldt ${selectedBattlenight.date} som individuel spiller!`);
+                    setShowConfirmation(true);
+                    setFlowStep('overview');
+                    await loadData();
+                  } catch (err: any) {
+                    setConfirmationText(err.message || 'Der skete en fejl');
+                    setShowConfirmation(true);
+                  }
                 }}
               >
                 ✅ Bekræft tilmelding

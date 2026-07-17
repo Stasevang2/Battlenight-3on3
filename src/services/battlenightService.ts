@@ -185,17 +185,21 @@ export const respondToInvite = async (
   userId: string,
   accept: boolean
 ) => {
+  // Opdater invite status
   const inviteRef = doc(db, 'teamInvites', inviteId);
   await updateDoc(inviteRef, {
     status: accept ? 'accepted' : 'rejected',
   });
 
+  // Hent holdet
   const teamsSnapshot = await getDocs(
     query(collection(db, 'teams'), where('__name__', '==', teamId))
   );
 
   if (!teamsSnapshot.empty) {
     const team = teamsSnapshot.docs[0].data() as Team;
+
+    // Opdater spiller status i holdet
     const updatedPlayers = team.players.map((p: TeamPlayer) =>
       p.userId === userId
         ? { ...p, status: accept ? 'accepted' as const : 'rejected' as const }
@@ -203,10 +207,35 @@ export const respondToInvite = async (
     );
     const teamRef = doc(db, 'teams', teamId);
     await updateDoc(teamRef, { players: updatedPlayers });
+
+    // Tilføj spiller til hold chat hvis accepteret
+    if (accept) {
+      const player = team.players.find((p: TeamPlayer) => p.userId === userId);
+      if (player) {
+        const { addPlayerToTeamConversation } = await import('./messageService');
+        await addPlayerToTeamConversation(teamId, userId, player.firstName);
+        console.log('Spiller tilføjet til hold chat efter accept:', player.firstName);
+      }
+    }
   }
 };
 
-export const signupIndividual = async (battlenightId: string, userId: string, userName: string) => {
+export const signupIndividual = async (
+  battlenightId: string,
+  userId: string,
+  userName: string
+) => {
+  // Tjek om spilleren allerede er tilmeldt
+  const existing = await getDocs(query(
+    collection(db, 'individualSignups'),
+    where('battlenightId', '==', battlenightId),
+    where('userId', '==', userId)
+  ));
+
+  if (!existing.empty) {
+    throw new Error('Du er allerede tilmeldt dette event som individuel spiller');
+  }
+
   await addDoc(collection(db, 'individualSignups'), {
     battlenightId,
     userId,

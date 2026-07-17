@@ -928,3 +928,25 @@
   border-color: rgba(200, 169, 81, 0.5);
   background: rgba(200, 169, 81, 0.08);
 }
+
+.team-chat-btn {
+  width: 100%;
+  padding: 12px 15px;
+  background: rgba(200, 169, 81, 0.1);
+  border: 1px solid rgba(200, 169, 81, 0.3);
+  border-radius: 10px;
+  color: #c8a951;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.team-chat-btn:hover {
+  background: rgba(200, 169, 81, 0.2);
+}
