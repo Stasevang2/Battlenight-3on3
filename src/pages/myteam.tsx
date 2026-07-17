@@ -472,7 +472,7 @@ function MyTeam() {
                           {/* Hold chat knap */}
                           <button
                             className="team-chat-btn"
-                            onClick={() => navigate('/messages')}
+                            onClick={() => navigate(`/messages?teamId=${team.id}`)}
                           >
                             💬 Hold Chat - {team.teamName}
                           </button>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -26,6 +26,7 @@ type Category = 'direct' | 'team' | 'admin' | 'challenges';
 
 function Messages() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { currentUser } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
@@ -53,6 +54,20 @@ function Messages() {
     loadSupportData();
     return () => unsubscribe();
   }, [currentUser]);
+
+  // Åbn specifik hold chat hvis teamId er i URL
+  useEffect(() => {
+    const teamId = searchParams.get('teamId');
+    if (teamId && conversations.length > 0) {
+      const teamConv = conversations.find(c =>
+        c.type === 'team' && c.teamId === teamId
+      );
+      if (teamConv) {
+        setActiveConversation(teamConv);
+        setActiveCategory('team');
+      }
+    }
+  }, [searchParams, conversations]);
 
   useEffect(() => {
     if (!activeConversation?.id || !currentUser) return;
@@ -143,12 +158,10 @@ function Messages() {
     setActiveCategory('direct');
   };
 
-  // Admin opretter broadcast til event
   const handleCreateAdminBroadcast = async (battlenight: Battlenight) => {
     if (!currentUser || !battlenight.id) return;
 
     try {
-      // Hent alle tilmeldte
       const [teams, individuals] = await Promise.all([
         getTeamsForBattlenight(battlenight.id),
         getIndividualSignups(battlenight.id),
@@ -157,7 +170,6 @@ function Messages() {
       const participantIds: string[] = [];
       const participantNames: string[] = [];
 
-      // Tilføj holdspillere
       teams.forEach(team => {
         team.players.forEach(player => {
           if (!participantIds.includes(player.userId)) {
@@ -167,7 +179,6 @@ function Messages() {
         });
       });
 
-      // Tilføj individuelle spillere
       (individuals as any[]).forEach(ind => {
         if (!participantIds.includes(ind.userId)) {
           participantIds.push(ind.userId);
@@ -175,7 +186,6 @@ function Messages() {
         }
       });
 
-      // Tilføj admin selv
       if (!participantIds.includes(currentUser.userId)) {
         participantIds.push(currentUser.userId);
         participantNames.push(currentUser.firstName);
@@ -253,7 +263,7 @@ function Messages() {
   };
 
   const getConvSubtitle = (conv: Conversation) => {
-    if (conv.type === 'team' && conv.playerNames) {
+    if (conv.type === 'team' && conv.playerNames && conv.playerNames.length > 0) {
       return conv.playerNames.join(', ');
     }
     if (conv.type === 'admin') {
@@ -262,12 +272,12 @@ function Messages() {
     return null;
   };
 
+  const isAdminOrSuperAdmin = currentUser?.role === 'admin' || currentUser?.role === 'superadmin';
+
   const filteredUsers = allUsers.filter(u =>
     u.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     u.userId.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const isAdminOrSuperAdmin = currentUser?.role === 'admin' || currentUser?.role === 'superadmin';
 
   if (!currentUser) {
     navigate('/');
@@ -281,6 +291,8 @@ function Messages() {
           <button className="back-btn" onClick={() => {
             setActiveConversation(null);
             setMessages([]);
+            // Ryd teamId fra URL
+            navigate('/messages');
           }}>← Tilbage</button>
         ) : (
           <button className="back-btn" onClick={() => navigate('/dashboard')}>← Tilbage</button>
@@ -322,8 +334,6 @@ function Messages() {
           {/* Ny chat panel */}
           {showNewChat && (
             <div className="new-chat-panel">
-
-              {/* Direkte besked - søg spiller */}
               <div className="new-chat-section">
                 <p className="new-chat-label">👤 Send direkte besked til spiller:</p>
                 <input
@@ -349,7 +359,6 @@ function Messages() {
                 )}
               </div>
 
-              {/* Admin broadcast - kun for admins */}
               {isAdminOrSuperAdmin && battlenights.length > 0 && (
                 <div className="new-chat-section">
                   <p className="new-chat-label">📢 Opret admin besked til event:</p>
@@ -454,7 +463,6 @@ function Messages() {
           </div>
         </>
       ) : (
-        /* Chat vindue */
         <div className="chat-container">
 
           {/* Admin broadcast info */}
@@ -473,7 +481,7 @@ function Messages() {
           {activeConversation.type === 'team' && (
             <div className="team-chat-info">
               <p>👥 {activeConversation.teamName}</p>
-              {activeConversation.playerNames && (
+              {activeConversation.playerNames && activeConversation.playerNames.length > 0 && (
                 <p className="team-chat-players">{activeConversation.playerNames.join(' · ')}</p>
               )}
             </div>
@@ -510,14 +518,13 @@ function Messages() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input - kun admin kan skrive i admin tråd broadcast */}
+          {/* Input */}
           {activeConversation.type === 'admin' && !isAdminOrSuperAdmin ? (
             <div className="reply-to-admin-info">
               <p>💬 Vil du svare til admin?</p>
               <button
                 className="reply-to-admin-btn"
                 onClick={async () => {
-                  // Find admin i samtalen
                   const adminUser = allUsers.find(u =>
                     activeConversation.participants.includes(u.userId) &&
                     (u.role === 'admin' || u.role === 'superadmin')
