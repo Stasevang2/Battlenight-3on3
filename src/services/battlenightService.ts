@@ -72,9 +72,13 @@ export type TeamInvite = {
 };
 
 export const getBattlenights = async (): Promise<Battlenight[]> => {
-  const q = query(collection(db, 'battlenights'), orderBy('createdAt', 'desc'));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Battlenight));
+  const snapshot = await getDocs(collection(db, 'battlenights'));
+  const events = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Battlenight));
+  
+  // Sorter efter dato - nærmeste først
+  return events.sort((a, b) => {
+    return new Date(a.date).getTime() - new Date(b.date).getTime();
+  });
 };
 
 export const createBattlenight = async (data: Omit<Battlenight, 'id' | 'createdAt'>) => {
