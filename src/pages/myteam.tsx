@@ -115,7 +115,8 @@ function MyTeam() {
 
     try {
       const teamId = await createTeam(team);
-
+      console.log('Team oprettet med ID:', teamId);
+      
       // Opret hold chat automatisk
       await createTeamConversation(
         teamId,
