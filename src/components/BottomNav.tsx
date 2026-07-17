@@ -7,7 +7,7 @@ import '../styles/bottomnav.css';
 function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentUser, pendingInvites, unreadNotifications } = useAuth();
+  const { currentUser, unreadNotifications } = useAuth();
   const [unreadMessages, setUnreadMessages] = useState(0);
 
   const isActive = (path: string) => location.pathname === path;
