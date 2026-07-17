@@ -8,7 +8,7 @@ import '../styles/dashboard.css';
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const { currentUser, pendingInvites, unreadNotifications } = useAuth();
   const [nextBattlenight, setNextBattlenight] = useState<Battlenight | null>(null);
   const [spotsLeft, setSpotsLeft] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,8 +28,6 @@ function Dashboard() {
       if (openEvents.length > 0) {
         const next = openEvents[0];
         setNextBattlenight(next);
-
-        // Hent antal tilmeldte
         const teams = await getTeamsForBattlenight(next.id!);
         const takenSpots = teams.reduce((sum, t) => sum + t.players.length, 0);
         setSpotsLeft(next.maxPlayers - takenSpots);
@@ -49,8 +47,8 @@ function Dashboard() {
       <div className="dashboard-header">
         <div className="header-left">
           <img
-            src="https://www.holdsport.dk/media/W1siZiIsIjIwMTkvMDYvMDcvN3lyM3Fnd201aF9yaWtsb2dvXzIwMC5wbmciXSxbInAiLCJ0aHVtYiIsIjM1MHgzNTAiXV0=?sha=7ce18b110b83be29"
-            alt="Rungsted Hockey"
+            src="/logo.png"
+            alt="3on3 Battlenight"
             className="header-logo"
             onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
               e.currentTarget.style.display = 'none';
@@ -78,17 +76,23 @@ function Dashboard() {
         ) : nextBattlenight ? (
           <div className="battlenight-card">
             <div className="battlenight-status open">ÅBEN FOR TILMELDING</div>
-            <h3 className="battlenight-date">{nextBattlenight.date}</h3>
+            <h3 className="battlenight-date">
+              {new Date(nextBattlenight.date).toLocaleDateString('da-DK', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </h3>
             <p className="battlenight-time">⏰ {nextBattlenight.time}</p>
             <p className="battlenight-price">💰 {nextBattlenight.price} kr pr. spiller</p>
 
-            {/* Pladser */}
             <div className="spots-container">
               <div className="spots-bar">
                 <div
                   className="spots-fill"
                   style={{
-                    width: `${((nextBattlenight.maxPlayers - spotsLeft) / nextBattlenight.maxPlayers) * 100}%`
+                    width: `${Math.min(((nextBattlenight.maxPlayers - spotsLeft) / nextBattlenight.maxPlayers) * 100, 100)}%`
                   }}
                 />
               </div>
@@ -114,7 +118,7 @@ function Dashboard() {
         )}
       </div>
 
-      {/* Statistik - viser 0 indtil rigtige data */}
+      {/* Statistik */}
       <div className="section">
         <h2 className="section-title">📊 Min Statistik</h2>
         <div className="stats-grid">
@@ -142,36 +146,61 @@ function Dashboard() {
       <div className="section">
         <h2 className="section-title">🎮 Menu</h2>
         <div className="menu-grid">
+
+          {/* Mit Hold - rødt tal hvis ventende invitationer */}
           <button className="menu-card" onClick={() => navigate('/myteam')}>
-            <span className="menu-icon">👥</span>
+            <span className="menu-icon-wrapper">
+              <span className="menu-icon">👥</span>
+              {pendingInvites > 0 && (
+                <span className="menu-badge">{pendingInvites}</span>
+              )}
+            </span>
             <span className="menu-label">Mit Hold</span>
           </button>
+
           <button className="menu-card" onClick={() => navigate('/calendar')}>
             <span className="menu-icon">📅</span>
             <span className="menu-label">Kalender</span>
           </button>
+
           <button className="menu-card" onClick={() => navigate('/messages')}>
             <span className="menu-icon">💬</span>
             <span className="menu-label">Beskeder</span>
           </button>
+
           <button className="menu-card" onClick={() => navigate('/leaderboard')}>
             <span className="menu-icon">🏆</span>
             <span className="menu-label">Rangliste</span>
           </button>
+
           <button className="menu-card" onClick={() => navigate('/food')}>
             <span className="menu-icon">🍔</span>
             <span className="menu-label">Mad & Drikke</span>
           </button>
+
           <button className="menu-card" onClick={() => navigate('/rules')}>
             <span className="menu-icon">📋</span>
             <span className="menu-label">Regler</span>
           </button>
+
+          {/* Profil - rødt tal hvis ulæste notifikationer */}
+          <button className="menu-card" onClick={() => navigate('/profile')}>
+            <span className="menu-icon-wrapper">
+              <span className="menu-icon">👤</span>
+              {unreadNotifications > 0 && (
+                <span className="menu-badge">{unreadNotifications}</span>
+              )}
+            </span>
+            <span className="menu-label">Profil</span>
+          </button>
+
           {(currentUser.role === 'admin' || currentUser.role === 'superadmin') && (
             <button className="menu-card admin" onClick={() => navigate('/admin')}>
               <span className="menu-icon">🛡️</span>
               <span className="menu-label">Admin</span>
             </button>
           )}
+
           {currentUser.role === 'superadmin' && (
             <button className="menu-card superadmin" onClick={() => navigate('/superadmin')}>
               <span className="menu-icon">⚙️</span>

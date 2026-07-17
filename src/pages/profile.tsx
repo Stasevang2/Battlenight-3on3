@@ -11,7 +11,7 @@ import '../styles/profile.css';
 
 function Profile() {
   const navigate = useNavigate();
-  const { currentUser, setCurrentUser } = useAuth();
+  const { currentUser, setCurrentUser, refreshCounts } = useAuth();
   const [showBalanceHistory, setShowBalanceHistory] = useState(false);
   const [showFoodOrders, setShowFoodOrders] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -82,6 +82,19 @@ function Profile() {
       await markAllAsRead(currentUser.userId);
       setUnreadCount(0);
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      refreshCounts();
+    }
+  };
+
+  const handleNotificationClick = (notif: Notification) => {
+    if (
+      notif.type === 'team_invite' ||
+      notif.type === 'invite_accepted' ||
+      notif.type === 'invite_rejected'
+    ) {
+      navigate('/myteam');
+    } else if (notif.type === 'admin_request') {
+      navigate('/superadmin');
     }
   };
 
@@ -144,13 +157,30 @@ function Profile() {
               {notifications.length === 0 ? (
                 <p className="no-notif">Ingen notifikationer endnu</p>
               ) : (
-                notifications.slice(0, 10).map(notif => (
-                  <div key={notif.id} className={`notif-item ${!notif.read ? 'unread' : ''}`}>
-                    <p className="notif-title">{notif.title}</p>
-                    <p className="notif-message">{notif.message}</p>
-                    <p className="notif-time">{formatTimestamp(notif.createdAt)}</p>
-                  </div>
-                ))
+                notifications.slice(0, 15).map(notif => {
+                  const isClickable =
+                    notif.type === 'team_invite' ||
+                    notif.type === 'invite_accepted' ||
+                    notif.type === 'invite_rejected' ||
+                    notif.type === 'admin_request';
+
+                  return (
+                    <div
+                      key={notif.id}
+                      className={`notif-item ${!notif.read ? 'unread' : ''} ${isClickable ? 'clickable' : ''}`}
+                      onClick={() => isClickable && handleNotificationClick(notif)}
+                    >
+                      <div className="notif-content">
+                        <p className="notif-title">{notif.title}</p>
+                        <p className="notif-message">{notif.message}</p>
+                        <p className="notif-time">{formatTimestamp(notif.createdAt)}</p>
+                      </div>
+                      {isClickable && (
+                        <span className="notif-arrow">→</span>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           )}

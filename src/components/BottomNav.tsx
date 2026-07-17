@@ -7,8 +7,8 @@ import '../styles/bottomnav.css';
 function BottomNav() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentUser } = useAuth();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { currentUser, pendingInvites, unreadNotifications } = useAuth();
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -17,7 +17,7 @@ function BottomNav() {
 
     const unsubscribe = subscribeToConversations(currentUser.userId, (conversations) => {
       const count = getTotalUnreadCount(conversations, currentUser.userId);
-      setUnreadCount(count);
+      setUnreadMessages(count);
     });
 
     return () => unsubscribe();
@@ -45,8 +45,10 @@ function BottomNav() {
       >
         <span className="nav-icon-wrapper">
           💬
-          {unreadCount > 0 && (
-            <span className="nav-unread-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+          {unreadMessages > 0 && (
+            <span className="nav-unread-badge">
+              {unreadMessages > 9 ? '9+' : unreadMessages}
+            </span>
           )}
         </span>
         <span>Beskeder</span>
@@ -55,7 +57,14 @@ function BottomNav() {
         className={`nav-btn ${isActive('/profile') ? 'active' : ''}`}
         onClick={() => navigate('/profile')}
       >
-        <span>👤</span>
+        <span className="nav-icon-wrapper">
+          👤
+          {unreadNotifications > 0 && (
+            <span className="nav-unread-badge">
+              {unreadNotifications > 9 ? '9+' : unreadNotifications}
+            </span>
+          )}
+        </span>
         <span>Profil</span>
       </button>
     </div>

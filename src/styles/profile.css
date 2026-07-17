@@ -509,3 +509,25 @@
   cursor: pointer;
   margin-bottom: 20px;
 }
+
+.notif-item.clickable {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.notif-item.clickable:hover {
+  background: rgba(200, 169, 81, 0.08);
+}
+
+.notif-content {
+  flex: 1;
+}
+
+.notif-arrow {
+  font-size: 1rem;
+  color: #c8a951;
+  flex-shrink: 0;
+}
