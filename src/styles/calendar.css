@@ -407,3 +407,64 @@
   text-transform: uppercase;
   margin-bottom: 15px;
 }
+
+.event-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.my-status-badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.my-status-badge.team {
+  background: rgba(0, 200, 100, 0.15);
+  color: #00c864;
+  border: 1px solid #00c864;
+}
+
+.my-status-badge.individual {
+  background: rgba(200, 169, 81, 0.15);
+  color: #c8a951;
+  border: 1px solid #c8a951;
+}
+
+.my-status-badge.waitlist {
+  background: rgba(255, 150, 0, 0.15);
+  color: #ff9600;
+  border: 1px solid #ff9600;
+}
+
+.event-btn.success {
+  background: rgba(0, 200, 100, 0.15);
+  color: #00c864;
+  border: 1px solid #00c864;
+}
+
+.expanded-status {
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin: 8px 0;
+}
+
+.expanded-status.team {
+  background: rgba(0, 200, 100, 0.1);
+  color: #00c864;
+}
+
+.expanded-status.individual {
+  background: rgba(200, 169, 81, 0.1);
+  color: #c8a951;
+}
+
+.expanded-status.waitlist {
+  background: rgba(255, 150, 0, 0.1);
+  color: #ff9600;
+}

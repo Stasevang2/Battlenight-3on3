@@ -2,16 +2,28 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { useAuth } from '../context/AuthContext';
-import { getBattlenights, getTeamsForBattlenight } from '../services/battlenightService';
-import type { Battlenight } from '../services/battlenightService';
+import {
+  getBattlenights,
+  getTeamsForBattlenight,
+  getIndividualSignups,
+  getUserEventStatus,
+} from '../services/battlenightService';
+import type { Battlenight, Team } from '../services/battlenightService';
 import '../styles/dashboard.css';
 
 function Dashboard() {
   const navigate = useNavigate();
   const { currentUser, pendingInvites, unreadNotifications } = useAuth();
   const [nextBattlenight, setNextBattlenight] = useState<Battlenight | null>(null);
-  const [spotsLeft, setSpotsLeft] = useState(0);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [individuals, setIndividuals] = useState<any[]>([]);
+  const [userStatus, setUserStatus] = useState<{
+    status: 'team' | 'individual' | 'waitlist' | 'none';
+    teamName?: string;
+    teamId?: string;
+  }>({ status: 'none' });
   const [isLoading, setIsLoading] = useState(true);
+  const [showTeamList, setShowTeamList] = useState(false);
 
   useEffect(() => {
     if (!currentUser) {
@@ -28,9 +40,16 @@ function Dashboard() {
       if (openEvents.length > 0) {
         const next = openEvents[0];
         setNextBattlenight(next);
-        const teams = await getTeamsForBattlenight(next.id!);
-        const takenSpots = teams.reduce((sum, t) => sum + t.players.length, 0);
-        setSpotsLeft(next.maxPlayers - takenSpots);
+
+        const [eventTeams, eventIndividuals, status] = await Promise.all([
+          getTeamsForBattlenight(next.id!),
+          getIndividualSignups(next.id!),
+          getUserEventStatus(next.id!, currentUser!.userId),
+        ]);
+
+        setTeams(eventTeams);
+        setIndividuals(eventIndividuals);
+        setUserStatus(status);
       }
     } catch (err) {
       console.error(err);
@@ -39,6 +58,19 @@ function Dashboard() {
   };
 
   if (!currentUser) return null;
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('da-DK', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  };
+
+  const acceptedTeams = teams.filter(t =>
+    t.players.some(p => p.status === 'accepted')
+  );
 
   return (
     <div className="dashboard-container">
@@ -75,40 +107,144 @@ function Dashboard() {
           <p className="loading-text">⏳ Henter events...</p>
         ) : nextBattlenight ? (
           <div className="battlenight-card">
-            <div className="battlenight-status open">ÅBEN FOR TILMELDING</div>
-            <h3 className="battlenight-date">
-              {new Date(nextBattlenight.date).toLocaleDateString('da-DK', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </h3>
+            <div className="battlenight-header-row">
+              <div className="battlenight-status open">ÅBEN FOR TILMELDING</div>
+              {/* Din status badge */}
+              {userStatus.status === 'team' && (
+                <div className="user-event-status team">✅ På hold</div>
+              )}
+              {userStatus.status === 'individual' && (
+                <div className="user-event-status individual">🏒 Individuel</div>
+              )}
+              {userStatus.status === 'waitlist' && (
+                <div className="user-event-status waitlist">⏳ Venteliste</div>
+              )}
+            </div>
+
+            <h3 className="battlenight-date">{formatDate(nextBattlenight.date)}</h3>
             <p className="battlenight-time">⏰ {nextBattlenight.time}</p>
             <p className="battlenight-price">💰 {nextBattlenight.price} kr pr. spiller</p>
 
+            {/* Din tilmeldingsstatus detaljer */}
+            {userStatus.status === 'team' && userStatus.teamName && (
+              <div className="user-status-detail team">
+                <p>👥 Du er tilmeldt som del af <strong>{userStatus.teamName}</strong></p>
+                <button className="status-action-btn" onClick={() => navigate('/myteam')}>
+                  Se dit hold →
+                </button>
+              </div>
+            )}
+
+            {userStatus.status === 'waitlist' && userStatus.teamName && (
+              <div className="user-status-detail waitlist">
+                <p>⏳ Du er på venteliste til <strong>{userStatus.teamName}</strong></p>
+                <p className="status-note">Holdlederen kontakter dig hvis der bliver plads</p>
+              </div>
+            )}
+
+            {userStatus.status === 'individual' && (
+              <div className="user-status-detail individual">
+                <p>🏒 Du er tilmeldt som individuel spiller</p>
+                <p className="status-note">Find et hold på dagen eller accepter en invitation</p>
+              </div>
+            )}
+
+            {userStatus.status === 'none' && (
+              <div className="join-options">
+                <button className="join-btn" onClick={() => navigate('/myteam')}>
+                  🏒 Tilmeld dig nu
+                </button>
+              </div>
+            )}
+
+            {/* Antal pladser */}
             <div className="spots-container">
               <div className="spots-bar">
                 <div
                   className="spots-fill"
                   style={{
-                    width: `${Math.min(((nextBattlenight.maxPlayers - spotsLeft) / nextBattlenight.maxPlayers) * 100, 100)}%`
+                    width: `${Math.min((teams.reduce((sum, t) => sum + t.players.filter(p => p.status === 'accepted').length, 0) + individuals.length) / nextBattlenight.maxPlayers * 100, 100)}%`
                   }}
                 />
               </div>
               <p className="spots-text">
-                {nextBattlenight.maxPlayers - spotsLeft} / {nextBattlenight.maxPlayers} spillere tilmeldt
+                {teams.reduce((sum, t) => sum + t.players.filter(p => p.status === 'accepted').length, 0) + individuals.length} / {nextBattlenight.maxPlayers} spillere tilmeldt
               </p>
             </div>
 
-            <div className="join-options">
-              <button className="join-btn" onClick={() => navigate('/myteam')}>
-                🏒 Tilmeld dig
-              </button>
-              <button className="join-btn-secondary" onClick={() => navigate('/calendar')}>
-                📅 Se alle events
-              </button>
-            </div>
+            {/* Hold & Spiller oversigt toggle */}
+            <button
+              className="show-teams-btn"
+              onClick={() => setShowTeamList(!showTeamList)}
+            >
+              👥 Se tilmeldte hold og spillere {showTeamList ? '▲' : '▼'}
+            </button>
+
+            {showTeamList && (
+              <div className="teams-overview">
+                {/* Hold liste */}
+                {acceptedTeams.length > 0 && (
+                  <div className="teams-overview-section">
+                    <h4 className="teams-overview-title">🏒 Hold ({acceptedTeams.length})</h4>
+                    {acceptedTeams.map(team => {
+                      const acceptedPlayers = team.players.filter(p => p.status === 'accepted');
+                      return (
+                        <div
+                          key={team.id}
+                          className="team-overview-card"
+                          onClick={() => navigate(`/messages?teamId=${team.id}`)}
+                        >
+                          <div className="team-overview-info">
+                            <p className="team-overview-name">{team.teamName}</p>
+                            <p className="team-overview-players">
+                              {acceptedPlayers.map(p => p.firstName).join(', ')}
+                            </p>
+                            <span className={`team-overview-equipment ${team.equipment}`}>
+                              {team.equipment === 'full' ? '🏒 Fuldt' : '🧤 Basis'}
+                            </span>
+                          </div>
+                          <div className="team-overview-actions">
+                            <button
+                              className="contact-team-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/messages?teamId=${team.id}`);
+                              }}
+                            >
+                              💬
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Individuelle spillere */}
+                {individuals.length > 0 && (
+                  <div className="teams-overview-section">
+                    <h4 className="teams-overview-title">🏒 Individuelle spillere ({individuals.length})</h4>
+                    <div className="individuals-list">
+                      {(individuals as any[]).map((player: any) => (
+                        <div key={player.id} className="individual-overview-card">
+                          <span className="individual-name">{player.userName}</span>
+                          <button
+                            className="contact-individual-btn"
+                            onClick={() => navigate('/messages')}
+                          >
+                            💬 Skriv
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {acceptedTeams.length === 0 && individuals.length === 0 && (
+                  <p className="no-teams-yet">Ingen tilmeldte endnu - vær den første! 🏒</p>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <div className="no-battlenight">
@@ -146,8 +282,6 @@ function Dashboard() {
       <div className="section">
         <h2 className="section-title">🎮 Menu</h2>
         <div className="menu-grid">
-
-          {/* Mit Hold - rødt tal hvis ventende invitationer */}
           <button className="menu-card" onClick={() => navigate('/myteam')}>
             <span className="menu-icon-wrapper">
               <span className="menu-icon">👥</span>
@@ -183,7 +317,6 @@ function Dashboard() {
             <span className="menu-label">Regler</span>
           </button>
 
-          {/* Profil - rødt tal hvis ulæste notifikationer */}
           <button className="menu-card" onClick={() => navigate('/profile')}>
             <span className="menu-icon-wrapper">
               <span className="menu-icon">👤</span>

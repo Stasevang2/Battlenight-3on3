@@ -9,6 +9,7 @@ import {
   signupIndividual,
   getShiftsForBattlenight,
   takeShift,
+  getUserEventStatus,
 } from '../services/battlenightService';
 import type { Battlenight, Team, Shift } from '../services/battlenightService';
 import '../styles/calendar.css';
@@ -20,6 +21,7 @@ function Calendar() {
   const [teamsMap, setTeamsMap] = useState<{ [key: string]: Team[] }>({});
   const [shiftsMap, setShiftsMap] = useState<{ [key: string]: Shift[] }>({});
   const [individualMap, setIndividualMap] = useState<{ [key: string]: any[] }>({});
+  const [userStatusMap, setUserStatusMap] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [showIndividual, setShowIndividual] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -35,19 +37,14 @@ function Calendar() {
     setIsLoading(true);
     try {
       const events = await getBattlenights();
-
-      // Sorter events efter dato (nærmeste først)
-      const sortedEvents = events.sort((a, b) => {
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
-      });
-
-      setBattlenights(sortedEvents);
+      setBattlenights(events);
 
       const teams: { [key: string]: Team[] } = {};
       const shifts: { [key: string]: Shift[] } = {};
       const individuals: { [key: string]: any[] } = {};
+      const statusMap: { [key: string]: string } = {};
 
-      await Promise.all(sortedEvents.map(async (event) => {
+      await Promise.all(events.map(async (event) => {
         if (event.id) {
           const [t, s, i] = await Promise.all([
             getTeamsForBattlenight(event.id),
@@ -57,12 +54,18 @@ function Calendar() {
           teams[event.id] = t;
           shifts[event.id] = s;
           individuals[event.id] = i;
+
+          if (currentUser) {
+            const status = await getUserEventStatus(event.id, currentUser.userId);
+            statusMap[event.id] = status.status;
+          }
         }
       }));
 
       setTeamsMap(teams);
       setShiftsMap(shifts);
       setIndividualMap(individuals);
+      setUserStatusMap(statusMap);
     } catch (err) {
       console.error(err);
     }
@@ -98,7 +101,9 @@ function Calendar() {
   const getSpotsLeft = (battlenightId: string, maxPlayers: number) => {
     const teams = teamsMap[battlenightId] || [];
     const individuals = individualMap[battlenightId] || [];
-    const takenSpots = teams.reduce((sum, t) => sum + t.players.length, 0) + individuals.length;
+    const takenSpots = teams.reduce((sum, t) =>
+      sum + t.players.filter(p => p.status === 'accepted').length, 0
+    ) + individuals.length;
     return maxPlayers - takenSpots;
   };
 
@@ -113,7 +118,6 @@ function Calendar() {
     });
   };
 
-  // Gruppér alle events pr måned til årskalender
   const groupedByMonth = battlenights.reduce((acc, event) => {
     const date = new Date(event.date);
     const monthKey = isNaN(date.getTime())
@@ -124,13 +128,19 @@ function Calendar() {
     return acc;
   }, {} as { [key: string]: Battlenight[] });
 
-  // Næste 3 kommende events
   const upcomingEvents = battlenights
     .filter(e => e.status === 'open' || e.status === 'closed')
     .slice(0, 3);
 
-  // Alle events til årskalender
   const allFutureEvents = battlenights.filter(e => e.status !== 'completed');
+
+  const getStatusDot = (eventId: string) => {
+    const status = userStatusMap[eventId];
+    if (status === 'team' || status === 'individual' || status === 'waitlist') {
+      return '🟢';
+    }
+    return '🔴';
+  };
 
   return (
     <div className="page-container">
@@ -147,8 +157,6 @@ function Calendar() {
       )}
 
       <div className="content">
-
-        {/* Næste 3 events */}
         <h2 className="section-title">📅 Kommende Battlenights</h2>
 
         {isLoading ? (
@@ -156,7 +164,7 @@ function Calendar() {
         ) : upcomingEvents.length === 0 ? (
           <div className="no-events">
             <p>🏒 Ingen kommende Battlenights endnu</p>
-            <p>Hold øje med appen - nye events annonceres her!</p>
+            <p>Hold øje med appen!</p>
           </div>
         ) : (
           <div className="events-list">
@@ -167,20 +175,23 @@ function Calendar() {
               const takenShifts = shifts.filter(s => s.taken).length;
               const isRegisteredIndividual = registeredIndividual.includes(event.id!) ||
                 individuals.some((i: any) => i.userId === currentUser?.userId);
-              
+              const myStatus = userStatusMap[event.id!];
 
               return (
                 <div key={event.id} className={`event-card ${event.status}`}>
                   <div className="event-header">
-                    <span className={`event-status-badge ${event.status}`}>
-                      {event.status === 'open' ? '🟢 ÅBEN' : '🔴 LUKKET'}
-                    </span>
+                    <div className="event-header-left">
+                      <span className={`event-status-badge ${event.status}`}>
+                        {event.status === 'open' ? '🟢 ÅBEN' : '🔴 LUKKET'}
+                      </span>
+                      {/* Din status */}
+                      {myStatus === 'team' && <span className="my-status-badge team">✅ På hold</span>}
+                      {myStatus === 'individual' && <span className="my-status-badge individual">🏒 Individuel</span>}
+                      {myStatus === 'waitlist' && <span className="my-status-badge waitlist">⏳ Venteliste</span>}
+                    </div>
                     {(currentUser?.role === 'admin' || currentUser?.role === 'superadmin') && (
-                      <button
-                        className="event-shifts-btn"
-                        onClick={() => navigate('/admin')}
-                      >
-                        🛡️ Vagter: {takenShifts}/{shifts.length}
+                      <button className="event-shifts-btn" onClick={() => navigate('/admin')}>
+                        🛡️ {takenShifts}/{shifts.length}
                       </button>
                     )}
                   </div>
@@ -224,7 +235,7 @@ function Calendar() {
                         <p className="no-individual">Ingen individuelle spillere endnu</p>
                       )}
 
-                      {event.status === 'open' && !isRegisteredIndividual && (
+                      {event.status === 'open' && !isRegisteredIndividual && myStatus !== 'team' && (
                         <button
                           className="join-individual-btn"
                           onClick={() => handleIndividualSignup(event.id!)}
@@ -233,14 +244,12 @@ function Calendar() {
                         </button>
                       )}
                       {isRegisteredIndividual && (
-                        <p className="registered-individual">
-                          ✅ Du er tilmeldt som individuel spiller
-                        </p>
+                        <p className="registered-individual">✅ Du er tilmeldt som individuel spiller</p>
                       )}
                     </div>
                   )}
 
-                  {/* Admin: Tag vagt */}
+                  {/* Admin vagter */}
                   {(currentUser?.role === 'admin' || currentUser?.role === 'superadmin') &&
                     shifts.some(s => !s.taken) && (
                       <div className="shift-section">
@@ -258,12 +267,13 @@ function Calendar() {
                     )}
 
                   <div className="event-actions">
-                    {event.status === 'open' ? (
-                      <button
-                        className="event-btn primary"
-                        onClick={() => navigate('/myteam')}
-                      >
+                    {event.status === 'open' && myStatus !== 'team' ? (
+                      <button className="event-btn primary" onClick={() => navigate('/myteam')}>
                         🏒 Tilmeld dig
+                      </button>
+                    ) : event.status === 'open' && myStatus === 'team' ? (
+                      <button className="event-btn success" onClick={() => navigate('/myteam')}>
+                        ✅ Se dit hold
                       </button>
                     ) : (
                       <button className="event-btn disabled" disabled>
@@ -277,21 +287,21 @@ function Calendar() {
           </div>
         )}
 
-        {/* Årskalender - alle events */}
+        {/* Årskalender med grøn/rød cirkel */}
         {allFutureEvents.length > 0 && (
           <>
-            <h2 className="section-title" style={{ marginTop: '30px' }}>
-              📆 Alle Events
-            </h2>
-            <p className="calendar-note">Klik på et event for at se detaljer og tilmelde dig</p>
+            <h2 className="section-title" style={{ marginTop: '30px' }}>📆 Alle Events</h2>
+            <p className="calendar-note">
+              🟢 = Tilmeldt &nbsp;🔴 = Ikke tilmeldt &nbsp; Klik for at tilmelde dig
+            </p>
             <div className="year-calendar">
               {Object.entries(groupedByMonth).map(([month, events]) => (
                 <div key={month} className="month-card">
                   <h3 className="month-name">{month}</h3>
                   <div className="month-events">
                     {events.map(event => {
-                      const spotsLeft = getSpotsLeft(event.id!, event.maxPlayers);
-                      const isFull = spotsLeft <= 0;
+                      const myStatus = userStatusMap[event.id!];
+                      const isSignedUp = myStatus === 'team' || myStatus === 'individual' || myStatus === 'waitlist';
                       const isSelected = selectedEvent === event.id;
 
                       return (
@@ -300,37 +310,56 @@ function Calendar() {
                             className={`month-event-badge ${event.status} ${isSelected ? 'selected' : ''}`}
                             onClick={() => setSelectedEvent(isSelected ? null : event.id!)}
                           >
-                            🏒 {new Date(event.date).toLocaleDateString('da-DK', { day: 'numeric', month: 'short' })}
-                            {isFull && ' 🔴'}
+                            {isSignedUp ? '🟢' : '🔴'} {new Date(event.date).toLocaleDateString('da-DK', {
+                              day: 'numeric', month: 'short'
+                            })}
                           </button>
 
-                          {/* Udvidet event info når klikket */}
                           {isSelected && (
                             <div className="month-event-expanded">
                               <h4>{formatDate(event.date)}</h4>
                               <p>⏰ {event.time}</p>
                               <p>💰 {event.price} kr pr. spiller</p>
-                              <p>👥 {event.maxPlayers - spotsLeft}/{event.maxPlayers} tilmeldt</p>
-                              <div className="month-event-actions">
-                                {event.status === 'open' ? (
-                                  <>
-                                    <button
-                                      className="month-signup-btn"
-                                      onClick={() => navigate('/myteam')}
-                                    >
-                                      👥 Tilmeld hold
-                                    </button>
-                                    <button
-                                      className="month-individual-btn"
-                                      onClick={() => handleIndividualSignup(event.id!)}
-                                    >
-                                      🏒 Tilmeld individuel
-                                    </button>
-                                  </>
-                                ) : (
-                                  <p className="month-closed">🔴 Lukket for tilmelding</p>
-                                )}
-                              </div>
+                              <p>👥 {event.maxPlayers - getSpotsLeft(event.id!, event.maxPlayers)}/{event.maxPlayers} tilmeldt</p>
+
+                              {/* Din status */}
+                              {myStatus === 'team' && (
+                                <p className="expanded-status team">✅ Du er tilmeldt på hold</p>
+                              )}
+                              {myStatus === 'individual' && (
+                                <p className="expanded-status individual">🏒 Du er tilmeldt som individuel</p>
+                              )}
+                              {myStatus === 'waitlist' && (
+                                <p className="expanded-status waitlist">⏳ Du er på venteliste</p>
+                              )}
+
+                              {event.status === 'open' && !isSignedUp && (
+                                <div className="month-event-actions">
+                                  <button
+                                    className="month-signup-btn"
+                                    onClick={() => navigate('/myteam')}
+                                  >
+                                    👥 Tilmeld hold
+                                  </button>
+                                  <button
+                                    className="month-individual-btn"
+                                    onClick={() => handleIndividualSignup(event.id!)}
+                                  >
+                                    🏒 Individuel
+                                  </button>
+                                </div>
+                              )}
+                              {isSignedUp && (
+                                <button
+                                  className="month-signup-btn"
+                                  onClick={() => navigate('/myteam')}
+                                >
+                                  👀 Se tilmelding
+                                </button>
+                              )}
+                              {event.status !== 'open' && (
+                                <p className="month-closed">🔴 Lukket for tilmelding</p>
+                              )}
                             </div>
                           )}
                         </div>
@@ -342,7 +371,6 @@ function Calendar() {
             </div>
           </>
         )}
-
       </div>
       <BottomNav />
     </div>
