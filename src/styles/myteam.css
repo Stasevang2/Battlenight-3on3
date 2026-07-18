@@ -1013,3 +1013,73 @@
   cursor: pointer;
   white-space: nowrap;
 }
+
+.confirmation-banner {
+  padding: 15px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.confirmation-banner p {
+  margin-bottom: 5px;
+}
+
+.confirmation-banner.success {
+  background: rgba(0, 200, 100, 0.15);
+  border-bottom: 1px solid #00c864;
+  color: #00c864;
+  cursor: pointer;
+}
+
+.confirmation-banner.warning {
+  background: rgba(255, 150, 0, 0.15);
+  border-bottom: 1px solid #ff9600;
+  color: #ff9600;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.confirmation-banner.info {
+  background: rgba(200, 169, 81, 0.15);
+  border-bottom: 1px solid #c8a951;
+  color: #c8a951;
+  cursor: pointer;
+}
+
+.banner-close-btn {
+  padding: 8px 15px;
+  background: rgba(255, 150, 0, 0.2);
+  border: 1px solid #ff9600;
+  border-radius: 8px;
+  color: #ff9600;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.waitlist-info-box {
+  background: rgba(255, 150, 0, 0.08);
+  border: 1px solid rgba(255, 150, 0, 0.2);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.waitlist-info-box p {
+  font-size: 0.85rem;
+  color: #ff9600;
+  margin-bottom: 3px;
+}
+
+.waitlist-info-box p:last-child {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.team-role-badge.waitlist {
+  background: rgba(255, 150, 0, 0.15);
+  border: 1px solid #ff9600;
+  color: #ff9600;
+}

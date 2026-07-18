@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -26,6 +26,7 @@ type FlowStep = 'overview' | 'choose-type' | 'choose-existing' | 'create-team' |
 
 function MyTeam() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { currentUser } = useAuth();
   const [battlenights, setBattlenights] = useState<Battlenight[]>([]);
   const [myTeams, setMyTeams] = useState<Team[]>([]);
@@ -42,6 +43,7 @@ function MyTeam() {
   const [showInviteText, setShowInviteText] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
+  const [confirmationType, setConfirmationType] = useState<'success' | 'warning' | 'info'>('success');
   const [copiedText, setCopiedText] = useState(false);
   const [removeConfirm, setRemoveConfirm] = useState<string | null>(null);
   const [promoteConfirm, setPromoteConfirm] = useState<string | null>(null);
@@ -49,6 +51,18 @@ function MyTeam() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Håndter battlenightId fra URL parameter
+  useEffect(() => {
+    const battlenightId = searchParams.get('battlenightId');
+    if (battlenightId && battlenights.length > 0) {
+      const bn = battlenights.find(b => b.id === battlenightId);
+      if (bn) {
+        setSelectedBattlenight(bn);
+        setFlowStep('choose-type');
+      }
+    }
+  }, [searchParams, battlenights]);
 
   const loadData = async () => {
     if (!currentUser) return;
@@ -91,6 +105,15 @@ function MyTeam() {
     setIsLoading(false);
   };
 
+  const showBanner = (text: string, type: 'success' | 'warning' | 'info' = 'success', duration = 5000) => {
+    setConfirmationText(text);
+    setConfirmationType(type);
+    setShowConfirmation(true);
+    if (duration > 0) {
+      setTimeout(() => setShowConfirmation(false), duration);
+    }
+  };
+
   const handleReuseTeam = async (existingTeam: Team) => {
     if (!currentUser || !selectedBattlenight) return;
     const team: Omit<Team, 'id' | 'createdAt'> = {
@@ -116,8 +139,7 @@ function MyTeam() {
       const teamId = await createTeam(team);
       await createTeamConversation(teamId, existingTeam.teamName, [currentUser.userId], [currentUser.firstName], selectedBattlenight.id!, selectedBattlenight.date);
       await removeIndividualSignup(selectedBattlenight.id!, currentUser.userId);
-      setConfirmationText(`✅ Holdet "${existingTeam.teamName}" er tilmeldt!`);
-      setShowConfirmation(true);
+      showBanner(`✅ Holdet "${existingTeam.teamName}" er tilmeldt!`);
       setFlowStep('overview');
       await loadData();
     } catch (err) {
@@ -128,6 +150,10 @@ function MyTeam() {
   const handleCreateTeam = async () => {
     if (!currentUser || !selectedBattlenight) return;
     const finalTeamName = teamName.trim() || `Team ${currentUser.firstName}`;
+
+    const formattedDate = new Date(selectedBattlenight.date).toLocaleDateString('da-DK', {
+      weekday: 'long', day: 'numeric', month: 'long'
+    });
 
     const team: Omit<Team, 'id' | 'createdAt'> = {
       battlenightId: selectedBattlenight.id!,
@@ -195,14 +221,13 @@ function MyTeam() {
             toUserId: userId,
             type: 'team_invite',
             title: '🏒 Du er inviteret til et hold!',
-            message: `${currentUser.firstName} inviterer dig til "${finalTeamName}" - ${selectedBattlenight.date}. ⚡ Skynd dig! Der kan kun være 3 på holdet - først til mølle!`,
+            message: `${currentUser.firstName} inviterer dig til holdet "${finalTeamName}" til Battlenight ${formattedDate}. ⚡ Skynd dig - der kan kun være 3 på holdet!`,
             data: { teamId },
           });
         }
       }
 
-      setConfirmationText(`✅ Holdet "${finalTeamName}" er oprettet!`);
-      setShowConfirmation(true);
+      showBanner(`✅ Holdet "${finalTeamName}" er oprettet og tilmeldt ${formattedDate}!`);
       setFlowStep('overview');
       setTeamName('');
       setSelectedPlayers([]);
@@ -215,8 +240,29 @@ function MyTeam() {
   const handleRespondToInvite = async (invite: TeamInvite, accept: boolean) => {
     if (!currentUser) return;
     try {
+      // Hent team for at tjekke om fuldt
+      const { getTeamsByLeader } = await import('../services/battlenightService');
+      const allTeamsSnapshot = await import('../services/battlenightService').then(m =>
+        m.getTeamsForBattlenight(invite.battlenightId || '')
+      );
+      const invitedTeam = allTeamsSnapshot.find((t: Team) => t.id === invite.teamId);
+      const acceptedCount = invitedTeam?.players.filter((p: TeamPlayer) => p.status === 'accepted').length || 0;
+      const isFull = acceptedCount >= 3;
+
       await respondToInvite(invite.id!, invite.teamId, currentUser.userId, accept);
-      if (!accept) {
+
+      if (accept) {
+        if (isFull) {
+          // Holdet er fuldt - vis venteliste besked med det samme
+          showBanner(
+            `⏳ Holdet "${invite.teamName}" var fuldt da du accepterede - du er sat på venteliste! Holdlederen kontakter dig hvis der bliver en plads ledig.`,
+            'warning',
+            0 // 0 = forsvinder ikke automatisk
+          );
+        } else {
+          showBanner(`✅ Du er nu på holdet "${invite.teamName}"! Tjek hold chatten.`, 'success');
+        }
+      } else {
         await createNotification({
           toUserId: invite.fromUserId,
           type: 'invite_rejected',
@@ -225,6 +271,7 @@ function MyTeam() {
           data: { teamId: invite.teamId },
         });
       }
+
       setMyInvites(prev => prev.filter(i => i.id !== invite.id));
       await loadData();
     } catch (err) {
@@ -237,9 +284,11 @@ function MyTeam() {
     const user = allUsers.find(u => u.userId === userId);
     if (!user) return;
     const battlenight = battlenights.find(b => b.id === team.battlenightId);
+    const formattedDate = battlenight
+      ? new Date(battlenight.date).toLocaleDateString('da-DK', { weekday: 'long', day: 'numeric', month: 'long' })
+      : 'Kommende Battlenight';
 
     try {
-      // Tilføj til pending på holdet hvis ikke allerede der
       const alreadyInvited = team.players.some(p => p.userId === userId);
       if (!alreadyInvited) {
         const updatedPlayers = [...team.players, {
@@ -264,7 +313,6 @@ function MyTeam() {
         status: 'pending',
       });
 
-      // Tæl accepterede spillere
       const acceptedCount = team.players.filter(p => p.status === 'accepted').length;
       const isFull = acceptedCount >= 3;
 
@@ -273,14 +321,12 @@ function MyTeam() {
         type: 'team_invite',
         title: '🏒 Du er inviteret til et hold!',
         message: isFull
-          ? `${currentUser.firstName} inviterer dig til "${team.teamName}" - holdet er fuldt men du kan komme på venteliste! ⏳`
-          : `${currentUser.firstName} inviterer dig til "${team.teamName}" - ⚡ Skynd dig! Der kan kun være 3 på holdet - først til mølle!`,
+          ? `${currentUser.firstName} inviterer dig til "${team.teamName}" til Battlenight ${formattedDate} - holdet er fuldt men du kan komme på venteliste! ⏳`
+          : `${currentUser.firstName} inviterer dig til holdet "${team.teamName}" til Battlenight ${formattedDate}. ⚡ Skynd dig - der kan kun være 3 på holdet!`,
         data: { teamId: team.id! },
       });
 
-      setConfirmationText(`✅ Invitation sendt til ${user.firstName}!`);
-      setShowConfirmation(true);
-      setTimeout(() => setShowConfirmation(false), 3000);
+      showBanner(`✅ Invitation sendt til ${user.firstName}!`);
       setSearchQuery('');
       await loadData();
     } catch (err) {
@@ -298,9 +344,7 @@ function MyTeam() {
         message: `Du er blevet fjernet fra holdet "${team.teamName}"`,
       });
       setRemoveConfirm(null);
-      setConfirmationText('✅ Spiller fjernet fra holdet');
-      setShowConfirmation(true);
-      setTimeout(() => setShowConfirmation(false), 3000);
+      showBanner('✅ Spiller fjernet fra holdet');
       await loadData();
     } catch (err) {
       console.error(err);
@@ -311,9 +355,7 @@ function MyTeam() {
     try {
       await promoteFromWaitlist(team.id!, userId);
       setPromoteConfirm(null);
-      setConfirmationText('✅ Spiller er rykket op fra ventelisten!');
-      setShowConfirmation(true);
-      setTimeout(() => setShowConfirmation(false), 3000);
+      showBanner('✅ Spiller er rykket op fra ventelisten!');
       await loadData();
     } catch (err) {
       console.error(err);
@@ -353,14 +395,17 @@ function MyTeam() {
       });
     }
 
-    setConfirmationText('⚠️ Du er afmeldt holdet.');
-    setShowConfirmation(true);
+    showBanner('⚠️ Du er afmeldt holdet. Dine medspillere er notificeret.', 'warning');
     await loadData();
   };
 
   const generateInviteText = (type: 'team' | 'opponent', teamName: string, battlenightDate?: string) => {
+    const formattedDate = battlenightDate
+      ? new Date(battlenightDate).toLocaleDateString('da-DK', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+      : 'Kommende Battlenight';
+
     if (type === 'team') {
-      return `Hej! 🏒\n\nJeg vil gerne have dig med på mit hold "${teamName}" til 3on3 Battlenight på Rungsted Ishockey!\n\n📅 ${battlenightDate || 'Kommende Battlenight'}\n\n⚡ SKYND DIG! Der kan kun være 3 på holdet - først til mølle!\n\n📲 Download appen og opret dig her:\nbattlenight.netlify.app\n\nSøg efter holdet "${teamName}" og accepter invitationen!\n\nSes på isen! 🥅`;
+      return `Hej! 🏒\n\nJeg vil gerne have dig med på mit hold "${teamName}" til 3on3 Battlenight på Rungsted Ishockey!\n\n📅 ${formattedDate}\n\n⚡ SKYND DIG! Der kan kun være 3 på holdet - først til mølle!\n\n📲 Download appen og opret dig her:\nbattlenight.netlify.app\n\nSøg efter holdet "${teamName}" og accepter invitationen!\n\nSes på isen! 🥅`;
     } else {
       return `Hej! ⚔️\n\nJeg udfordrer dig til 3on3 Battlenight på Rungsted Ishockey!\n\n📲 Download appen og opret dit eget hold her:\nbattlenight.netlify.app\n\nFind holdet "${teamName}" på ranglisten og send en udfordring!\n\nHåber du tør tage imod! 😏🏒`;
     }
@@ -400,9 +445,21 @@ function MyTeam() {
         <div />
       </div>
 
+      {/* Bannere */}
       {showConfirmation && (
-        <div className="confirmation-banner" onClick={() => setShowConfirmation(false)}>
-          {confirmationText}
+        <div
+          className={`confirmation-banner ${confirmationType}`}
+          onClick={() => confirmationType !== 'warning' && setShowConfirmation(false)}
+        >
+          <p>{confirmationText}</p>
+          {confirmationType === 'warning' && (
+            <button
+              className="banner-close-btn"
+              onClick={() => setShowConfirmation(false)}
+            >
+              ✕ Forstået
+            </button>
+          )}
         </div>
       )}
       {copiedText && <div className="copied-banner">📋 Tekst kopieret!</div>}
@@ -424,7 +481,11 @@ function MyTeam() {
                     <div className="invite-info">
                       <h3 className="invite-team">🏒 {invite.teamName}</h3>
                       <p className="invite-from">Fra: <strong>{invite.fromUserName}</strong></p>
-                      <p className="invite-date">📅 {invite.battlenightDate}</p>
+                      <p className="invite-date">
+                        📅 {new Date(invite.battlenightDate).toLocaleDateString('da-DK', {
+                          weekday: 'long', day: 'numeric', month: 'long'
+                        })}
+                      </p>
                       <p className="invite-hurry">⚡ Skynd dig - først til mølle!</p>
                     </div>
                     <div className="invite-actions">
@@ -444,7 +505,7 @@ function MyTeam() {
               <p className="loading-text">⏳ Henter hold...</p>
             ) : (
               <>
-                {/* Tilmeld knap */}
+                {/* Kun næste battlenight */}
                 {battlenights.length > 0 && (
                   <div className="signup-section">
                     <h2 className="section-title">🏒 Næste Battlenight</h2>
@@ -487,6 +548,9 @@ function MyTeam() {
                       const waitlistPlayers = team.players.filter(p => p.status === 'waitlist');
                       const pendingPlayers = team.players.filter(p => p.status === 'pending');
 
+                      // Er den nuværende bruger på venteliste?
+                      const myPlayerStatus = team.players.find(p => p.userId === currentUser.userId)?.status;
+
                       return (
                         <div key={team.id} className="team-card">
                           <div className="team-header">
@@ -500,18 +564,28 @@ function MyTeam() {
                                   : 'Ukendt event'}
                               </p>
                             </div>
-                            <span className={`team-role-badge ${isLeader ? 'leader' : 'player'}`}>
-                              {isLeader ? '👑 Holdleder' : '👤 Spiller'}
+                            <span className={`team-role-badge ${isLeader ? 'leader' : myPlayerStatus === 'waitlist' ? 'waitlist' : 'player'}`}>
+                              {isLeader ? '👑 Holdleder' : myPlayerStatus === 'waitlist' ? '⏳ Venteliste' : '👤 Spiller'}
                             </span>
                           </div>
 
+                          {/* Venteliste info til spiller */}
+                          {!isLeader && myPlayerStatus === 'waitlist' && (
+                            <div className="waitlist-info-box">
+                              <p>⏳ Du er på venteliste til dette hold</p>
+                              <p>Holdlederen kontakter dig hvis der bliver en plads ledig</p>
+                            </div>
+                          )}
+
                           {/* Hold chat knap */}
-                          <button
-                            className="team-chat-btn"
-                            onClick={() => navigate(`/messages?teamId=${team.id}`)}
-                          >
-                            💬 Hold Chat - {team.teamName}
-                          </button>
+                          {myPlayerStatus === 'accepted' && (
+                            <button
+                              className="team-chat-btn"
+                              onClick={() => navigate(`/messages?teamId=${team.id}`)}
+                            >
+                              💬 Hold Chat - {team.teamName}
+                            </button>
+                          )}
 
                           {/* Udstyr */}
                           <div className="equipment-row">
@@ -546,31 +620,15 @@ function MyTeam() {
                                     </p>
                                     <p className="player-details">{player.club}</p>
                                   </div>
-                                  {/* Holdleder kan smide spillere af */}
                                   {isLeader && player.userId !== currentUser.userId && (
                                     <div>
                                       {removeConfirm === player.userId ? (
                                         <div className="remove-confirm">
-                                          <button
-                                            className="remove-confirm-yes"
-                                            onClick={() => handleRemovePlayer(team, player.userId)}
-                                          >
-                                            ✓
-                                          </button>
-                                          <button
-                                            className="remove-confirm-no"
-                                            onClick={() => setRemoveConfirm(null)}
-                                          >
-                                            ✕
-                                          </button>
+                                          <button className="remove-confirm-yes" onClick={() => handleRemovePlayer(team, player.userId)}>✓</button>
+                                          <button className="remove-confirm-no" onClick={() => setRemoveConfirm(null)}>✕</button>
                                         </div>
                                       ) : (
-                                        <button
-                                          className="remove-btn"
-                                          onClick={() => setRemoveConfirm(player.userId)}
-                                        >
-                                          ✕
-                                        </button>
+                                        <button className="remove-btn" onClick={() => setRemoveConfirm(player.userId)}>✕</button>
                                       )}
                                     </div>
                                   )}
@@ -580,7 +638,7 @@ function MyTeam() {
                           </div>
 
                           {/* Afventende svar */}
-                          {pendingPlayers.length > 0 && (
+                          {isLeader && pendingPlayers.length > 0 && (
                             <div className="players-section">
                               <h3 className="players-title">⏳ Afventer svar ({pendingPlayers.length})</h3>
                               <div className="players-list">
@@ -598,7 +656,7 @@ function MyTeam() {
                             </div>
                           )}
 
-                          {/* Venteliste - kun synlig for holdleder */}
+                          {/* Venteliste - kun for holdleder */}
                           {isLeader && waitlistPlayers.length > 0 && (
                             <div className="players-section">
                               <h3 className="players-title">
@@ -615,42 +673,19 @@ function MyTeam() {
                                       <p className="player-name">{player.firstName}</p>
                                       <p className="player-details">{player.club}</p>
                                     </div>
-                                    {/* Holdleder kan promovere fra venteliste */}
-                                    {acceptedPlayers.length < 3 && (
+                                    {acceptedPlayers.length < 3 ? (
                                       <div>
                                         {promoteConfirm === player.userId ? (
                                           <div className="remove-confirm">
-                                            <button
-                                              className="remove-confirm-yes"
-                                              onClick={() => handlePromotePlayer(team, player.userId)}
-                                            >
-                                              ✓
-                                            </button>
-                                            <button
-                                              className="remove-confirm-no"
-                                              onClick={() => setPromoteConfirm(null)}
-                                            >
-                                              ✕
-                                            </button>
+                                            <button className="remove-confirm-yes" onClick={() => handlePromotePlayer(team, player.userId)}>✓</button>
+                                            <button className="remove-confirm-no" onClick={() => setPromoteConfirm(null)}>✕</button>
                                           </div>
                                         ) : (
-                                          <button
-                                            className="promote-btn"
-                                            onClick={() => setPromoteConfirm(player.userId)}
-                                          >
-                                            ↑ Tilføj
-                                          </button>
+                                          <button className="promote-btn" onClick={() => setPromoteConfirm(player.userId)}>↑ Tilføj</button>
                                         )}
                                       </div>
-                                    )}
-                                    {/* Holdleder kan fjerne fra venteliste */}
-                                    {acceptedPlayers.length >= 3 && (
-                                      <button
-                                        className="remove-btn"
-                                        onClick={() => handleRemovePlayer(team, player.userId)}
-                                      >
-                                        ✕
-                                      </button>
+                                    ) : (
+                                      <button className="remove-btn" onClick={() => handleRemovePlayer(team, player.userId)}>✕</button>
                                     )}
                                   </div>
                                 ))}
@@ -665,7 +700,7 @@ function MyTeam() {
                               <p className="form-hint">
                                 {acceptedPlayers.length >= 3
                                   ? '⚠️ Holdet er fuldt - nye spillere kommer på venteliste'
-                                  : `💡 Du kan sende mange invitationer - de ${3 - acceptedPlayers.length} første der accepterer kommer på holdet`}
+                                  : `💡 Send mange invitationer - de ${3 - acceptedPlayers.length} første der accepterer kommer på holdet`}
                               </p>
 
                               <div className="invite-search">
@@ -882,7 +917,7 @@ function MyTeam() {
 
             <div className="form-section">
               <label className="form-label">👥 Inviter medspillere <span className="optional">(valgfrit)</span></label>
-              <p className="form-hint">⚡ Du kan sende mange invitationer - de 2 første der accepterer kommer på holdet!</p>
+              <p className="form-hint">⚡ Send mange invitationer - de 2 første der accepterer kommer på holdet!</p>
 
               <input
                 type="text"
@@ -998,14 +1033,11 @@ function MyTeam() {
                   try {
                     const { signupIndividual } = await import('../services/battlenightService');
                     await signupIndividual(selectedBattlenight.id!, currentUser.userId, currentUser.firstName);
-                    setConfirmationText(`✅ Du er tilmeldt som individuel spiller!`);
-                    setShowConfirmation(true);
+                    showBanner(`✅ Du er tilmeldt som individuel spiller til ${new Date(selectedBattlenight.date).toLocaleDateString('da-DK', { day: 'numeric', month: 'long' })}!`);
                     setFlowStep('overview');
                     await loadData();
                   } catch (err: any) {
-                    setConfirmationText(err.message || 'Der skete en fejl');
-                    setShowConfirmation(true);
-                    setTimeout(() => setShowConfirmation(false), 3000);
+                    showBanner(err.message || 'Der skete en fejl', 'warning', 3000);
                   }
                 }}
               >
