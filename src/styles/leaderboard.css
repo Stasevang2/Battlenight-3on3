@@ -1,5 +1,20 @@
+/* Challenges sektion */
 .challenges-section {
   margin-bottom: 20px;
+}
+
+.challenge-count {
+  background: #CC0000;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-left: 8px;
 }
 
 .challenge-card {
@@ -15,8 +30,13 @@
 
 .challenge-from {
   font-size: 0.95rem;
-  font-weight: 700;
   color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.challenge-event {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
   margin-bottom: 4px;
 }
 
@@ -61,6 +81,7 @@
   cursor: pointer;
 }
 
+/* Årgangs toggle */
 .year-toggle-row {
   display: flex;
   justify-content: space-between;
@@ -84,6 +105,7 @@
   color: rgba(255, 255, 255, 0.4);
 }
 
+/* Podium */
 .podium {
   display: flex;
   justify-content: center;
@@ -150,6 +172,7 @@
   font-weight: 600;
 }
 
+/* Rangliste */
 .leaderboard-list {
   display: flex;
   flex-direction: column;
@@ -165,7 +188,6 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 12px 15px;
-  transition: all 0.2s ease;
 }
 
 .leaderboard-row.my-team {
@@ -249,7 +271,8 @@
   background: rgba(255, 150, 0, 0.3);
 }
 
-.challenge-rules {
+/* Point forklaring */
+.points-explanation {
   background: rgba(255, 255, 255, 0.03);
   border: 1px dashed rgba(255, 255, 255, 0.1);
   border-radius: 10px;
@@ -257,13 +280,14 @@
   margin-top: 10px;
 }
 
-.challenge-rules p {
-  font-size: 0.78rem;
+.points-explanation p {
+  font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.4);
-  line-height: 1.5;
-  margin-bottom: 4px;
+  line-height: 1.6;
+  margin-bottom: 3px;
 }
 
+/* No results */
 .no-results {
   text-align: center;
   padding: 40px 20px;
@@ -274,81 +298,7 @@
   line-height: 1.8;
 }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
-  padding: 20px;
-}
-
-.modal {
-  background: #1a3a5c;
-  border: 1px solid rgba(200, 169, 81, 0.3);
-  border-radius: 20px;
-  padding: 30px 25px;
-  width: 100%;
-  max-width: 350px;
-}
-
-.modal-title {
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: #ffffff;
-  margin-bottom: 15px;
-  text-align: center;
-}
-
-.modal-text {
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.8);
-  text-align: center;
-  margin-bottom: 10px;
-  line-height: 1.5;
-}
-
-.modal-note {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.4);
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.modal-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.modal-confirm-btn {
-  width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, #c8a951, #e8c97a);
-  border: none;
-  border-radius: 10px;
-  color: #0a1628;
-  font-size: 1rem;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.modal-cancel-btn {
-  width: 100%;
-  padding: 12px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-
+/* Toggle switch */
 .toggle-switch {
   position: relative;
   display: inline-block;
@@ -394,17 +344,152 @@ input:checked + .toggle-slider:before {
   transform: translateX(24px);
 }
 
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+}
+
+.modal {
+  background: #1a3a5c;
+  border: 1px solid rgba(200, 169, 81, 0.3);
+  border-radius: 20px;
+  padding: 25px;
+  width: 100%;
+  max-width: 380px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modal-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.modal-text {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.modal-field label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+}
+
+.modal-select {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.modal-select option {
+  background: #0a1628;
+}
+
+.modal-input {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.modal-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.modal-new-team-btn {
+  background: transparent;
+  border: none;
+  color: #c8a951;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 4px 0;
+  text-align: left;
+}
+
+.modal-info {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 15px;
+}
+
+.modal-info p {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 1.6;
+}
+
+.modal-note {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 20px;
+}
+
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-confirm-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #c8a951, #e8c97a);
+  border: none;
+  border-radius: 10px;
+  color: #0a1628;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.modal-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-cancel-btn {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
 .loading-text {
   text-align: center;
   color: rgba(255, 255, 255, 0.5);
   padding: 30px;
-}
-
-.section-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  margin-bottom: 15px;
 }
