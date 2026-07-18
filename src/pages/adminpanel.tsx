@@ -39,8 +39,7 @@ function AdminPanel() {
   const [selectedPlayer, setSelectedPlayer] = useState('');
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [messageSent, setMessageSent] = useState(false);
-  const [registeredResults, setRegisteredResults] = useState<string[]>([]);
-
+ 
   useEffect(() => {
     loadInitialData();
   }, []);
