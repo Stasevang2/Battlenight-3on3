@@ -241,7 +241,6 @@ function MyTeam() {
     if (!currentUser) return;
     try {
       // Hent team for at tjekke om fuldt
-      const { getTeamsByLeader } = await import('../services/battlenightService');
       const allTeamsSnapshot = await import('../services/battlenightService').then(m =>
         m.getTeamsForBattlenight(invite.battlenightId || '')
       );
