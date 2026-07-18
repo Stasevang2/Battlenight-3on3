@@ -134,14 +134,6 @@ function Calendar() {
 
   const allFutureEvents = battlenights.filter(e => e.status !== 'completed');
 
-  const getStatusDot = (eventId: string) => {
-    const status = userStatusMap[eventId];
-    if (status === 'team' || status === 'individual' || status === 'waitlist') {
-      return '🟢';
-    }
-    return '🔴';
-  };
-
   return (
     <div className="page-container">
       <div className="page-header">
