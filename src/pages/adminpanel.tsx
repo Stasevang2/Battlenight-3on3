@@ -39,7 +39,7 @@ function AdminPanel() {
   const [selectedPlayer, setSelectedPlayer] = useState('');
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [messageSent, setMessageSent] = useState(false);
- 
+
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -125,22 +125,15 @@ function AdminPanel() {
     winner: 'teamA' | 'teamB' | 'draw' | 'undecided'
   ) => {
     if (!currentUser || !selectedEvent) return;
-    const resultKey = `${teamA.id}-${teamB.id}`;
 
-    // Tjek om resultat allerede eksisterer
-    const existingResult = results.find(r =>
-      (r.teamAId === teamA.id && r.teamBId === teamB.id) ||
-      (r.teamAId === teamB.id && r.teamBId === teamA.id)
-    );
+    const existingResult = getResultForTeams(teamA.id!, teamB.id!);
 
     try {
       const selectedEventData = battlenights.find(b => b.id === selectedEvent);
 
       if (existingResult) {
-        // Opdater eksisterende resultat
         await updateResult(existingResult.id!, winner);
       } else {
-        // Opret nyt resultat
         await createResult({
           battlenightId: selectedEvent,
           battlenightDate: selectedEventData?.date || '',
@@ -155,7 +148,6 @@ function AdminPanel() {
         });
       }
 
-      setRegisteredResults(prev => [...prev, resultKey]);
       await loadEventData(selectedEvent);
     } catch (err) {
       console.error(err);
@@ -211,9 +203,9 @@ function AdminPanel() {
     );
   };
 
-  const getWinnerLabel = (result: Result, teamAId: string) => {
+  const getWinnerLabel = (result: Result, teamId: string) => {
     if (!result.winner) return null;
-    const isTeamA = result.teamAId === teamAId;
+    const isTeamA = result.teamAId === teamId;
     if (result.winner === 'draw') return '🤝 Uafgjort';
     if (result.winner === 'undecided') return '❓ Ubestemt';
     if ((result.winner === 'teamA' && isTeamA) || (result.winner === 'teamB' && !isTeamA)) return '🏆 Vandt';
@@ -410,11 +402,10 @@ function AdminPanel() {
                   <div className="results-list">
                     {teams.map((teamA, indexA) =>
                       teams.slice(indexA + 1).map((teamB) => {
-                        const resultKey = `${teamA.id}-${teamB.id}`;
                         const existingResult = getResultForTeams(teamA.id!, teamB.id!);
 
                         return (
-                          <div key={resultKey} className="result-card">
+                          <div key={`${teamA.id}-${teamB.id}`} className="result-card">
                             <div className="result-teams">
                               <span className="result-team-name">{teamA.teamName}</span>
                               <span className="vs-text">VS</span>
@@ -429,7 +420,7 @@ function AdminPanel() {
                                 </p>
                                 <button
                                   className="result-edit-btn"
-                                  onClick={() => setRegisteredResults(prev => prev.filter(r => r !== resultKey))}
+                                  onClick={() => updateResult(existingResult.id!, null).then(() => loadEventData(selectedEvent))}
                                 >
                                   ✏️ Ret resultat
                                 </button>
