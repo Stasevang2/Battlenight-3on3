@@ -23,8 +23,6 @@ function Leaderboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [myRank, setMyRank] = useState(0);
   const [myTeamEntry, setMyTeamEntry] = useState<LeaderboardEntry | null>(null);
-
-  // Challenge modal
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [challengeTarget, setChallengeTarget] = useState<LeaderboardEntry | null>(null);
   const [battlenights, setBattlenights] = useState<Battlenight[]>([]);
@@ -34,8 +32,6 @@ function Leaderboard() {
   const [useNewTeam, setUseNewTeam] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [challengeSending, setChallengeSending] = useState(false);
-
-  // Indgående udfordringer
   const [incomingChallenges, setIncomingChallenges] = useState<Challenge[]>([]);
 
   const currentUserBirthYear = currentUser?.birthYear || 2012;
@@ -47,7 +43,6 @@ function Leaderboard() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      // Udløb gamle udfordringer
       await expireOldChallenges();
 
       const [board, events, challenges] = await Promise.all([
@@ -64,10 +59,8 @@ function Leaderboard() {
         const myEntry = board.find(e => e.leaderId === currentUser.userId);
         if (myEntry) {
           setMyTeamEntry(myEntry);
-          const rank = board.indexOf(myEntry) + 1;
-          setMyRank(rank);
+          setMyRank(board.indexOf(myEntry) + 1);
         }
-
         const teams = await getTeamsByLeader(currentUser.userId);
         setMyTeams(teams);
       }
@@ -108,10 +101,9 @@ function Leaderboard() {
       let challengerTeamId = selectedTeamId;
       let challengerTeamName = myTeams.find(t => t.id === selectedTeamId)?.teamName || '';
 
-      // Opret nyt hold hvis valgt
       if (useNewTeam || !selectedTeamId) {
         const finalTeamName = newTeamName.trim() || `Team ${currentUser.firstName}`;
-        const newTeam = await createTeam({
+        const newTeamId = await createTeam({
           battlenightId: selectedBattlenight,
           teamName: finalTeamName,
           leaderId: currentUser.userId,
@@ -129,10 +121,9 @@ function Leaderboard() {
           present: null,
           isIndividual: false,
         });
-        challengerTeamId = newTeam;
+        challengerTeamId = newTeamId;
         challengerTeamName = finalTeamName;
       } else {
-        // Tilmeld eksisterende hold til dette event
         const existingTeam = myTeams.find(t => t.id === selectedTeamId);
         if (existingTeam && existingTeam.battlenightId !== selectedBattlenight) {
           const newTeamId = await createTeam({
@@ -162,7 +153,6 @@ function Leaderboard() {
         weekday: 'long', day: 'numeric', month: 'long'
       });
 
-      // Opret udfordring
       const challengeId = await createChallenge({
         challengerTeamId,
         challengerTeamName,
@@ -176,16 +166,14 @@ function Leaderboard() {
         status: 'pending',
       });
 
-      // Send notifikation til udfordret hold
       await createNotification({
         toUserId: challengeTarget.leaderId,
         type: 'general',
         title: '⚔️ Du er udfordret!',
-        message: `${currentUser.firstName} udfordrer dit hold "${challengeTarget.teamName}" til en officiel kamp til Battlenight ${formattedDate}! Du har 14 dage til at acceptere.`,
+        message: `${currentUser.firstName} udfordrer "${challengeTarget.teamName}" til officiel kamp til Battlenight ${formattedDate}! Du har 14 dage til at acceptere.`,
         data: { challengeId },
       });
 
-      // Opret beskedtråd til udfordringen
       const { createConversation } = await import('../services/messageService');
       await createConversation({
         type: 'challenge',
@@ -214,7 +202,6 @@ function Leaderboard() {
       await respondToChallenge(challenge.id!, accept);
 
       if (accept) {
-        // Tilmeld udfordret hold til eventet
         await createTeam({
           battlenightId: challenge.battlenightId,
           teamName: challenge.challengedTeamName,
@@ -259,8 +246,7 @@ function Leaderboard() {
   const getDaysLeft = (expiresAt: any) => {
     if (!expiresAt) return 0;
     const expiry = expiresAt?.toDate ? expiresAt.toDate() : new Date(expiresAt.seconds * 1000);
-    const now = new Date();
-    const diff = expiry.getTime() - now.getTime();
+    const diff = expiry.getTime() - new Date().getTime();
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   };
 
@@ -286,20 +272,14 @@ function Leaderboard() {
                 <div className="challenge-info">
                   <p className="challenge-from">⚔️ <strong>{challenge.challengerTeamName}</strong> udfordrer dit hold!</p>
                   <p className="challenge-event">
-                    📅 {new Date(challenge.battlenightDate).toLocaleDateString('da-DK', {
-                      weekday: 'long', day: 'numeric', month: 'long'
-                    })}
+                    📅 {new Date(challenge.battlenightDate).toLocaleDateString('da-DK', { weekday: 'long', day: 'numeric', month: 'long' })}
                   </p>
                   <p className="challenge-days">⏰ {getDaysLeft(challenge.expiresAt)} dage tilbage</p>
                   <p className="challenge-note">⚠️ Accepterer du ikke inden 14 dage taber du din placering</p>
                 </div>
                 <div className="challenge-actions">
-                  <button className="accept-btn" onClick={() => handleRespondToChallenge(challenge, true)}>
-                    ✅ Acceptér
-                  </button>
-                  <button className="decline-btn" onClick={() => handleRespondToChallenge(challenge, false)}>
-                    ❌ Afvis
-                  </button>
+                  <button className="accept-btn" onClick={() => handleRespondToChallenge(challenge, true)}>✅ Acceptér</button>
+                  <button className="decline-btn" onClick={() => handleRespondToChallenge(challenge, false)}>❌ Afvis</button>
                 </div>
               </div>
             ))}
@@ -317,11 +297,7 @@ function Leaderboard() {
             </p>
           </div>
           <label className="toggle-switch">
-            <input
-              type="checkbox"
-              checked={showAllYears}
-              onChange={(e) => setShowAllYears(e.target.checked)}
-            />
+            <input type="checkbox" checked={showAllYears} onChange={(e) => setShowAllYears(e.target.checked)} />
             <span className="toggle-slider" />
           </label>
         </div>
@@ -340,25 +316,19 @@ function Leaderboard() {
               <div className="podium">
                 <div className="podium-item second">
                   <span className="podium-crown">🥈</span>
-                  <div className="podium-block second-block">
-                    <span className="podium-rank">2</span>
-                  </div>
+                  <div className="podium-block second-block"><span className="podium-rank">2</span></div>
                   <span className="podium-name">{filteredLeaderboard[1]?.teamName}</span>
                   <span className="podium-points">{filteredLeaderboard[1]?.points} pt</span>
                 </div>
                 <div className="podium-item first">
                   <span className="podium-crown">🏆</span>
-                  <div className="podium-block first-block">
-                    <span className="podium-rank">1</span>
-                  </div>
+                  <div className="podium-block first-block"><span className="podium-rank">1</span></div>
                   <span className="podium-name">{filteredLeaderboard[0]?.teamName}</span>
                   <span className="podium-points">{filteredLeaderboard[0]?.points} pt</span>
                 </div>
                 <div className="podium-item third">
                   <span className="podium-crown">🥉</span>
-                  <div className="podium-block third-block">
-                    <span className="podium-rank">3</span>
-                  </div>
+                  <div className="podium-block third-block"><span className="podium-rank">3</span></div>
                   <span className="podium-name">{filteredLeaderboard[2]?.teamName}</span>
                   <span className="podium-points">{filteredLeaderboard[2]?.points} pt</span>
                 </div>
@@ -394,12 +364,7 @@ function Leaderboard() {
                     <div className="team-right">
                       <span className="team-points">{team.points} pt</span>
                       {canChallengeTeam && (
-                        <button
-                          className="mini-challenge-btn"
-                          onClick={() => handleOpenChallenge(team)}
-                        >
-                          ⚔️
-                        </button>
+                        <button className="mini-challenge-btn" onClick={() => handleOpenChallenge(team)}>⚔️</button>
                       )}
                     </div>
                   </div>
@@ -411,7 +376,7 @@ function Leaderboard() {
             <div className="points-explanation">
               <p>🏆 Sejr = 3 pt &nbsp; 🤝 Uafgjort = 2 pt &nbsp; 💔 Tab = 1 pt &nbsp; ❓ Ubestemt = 1 pt</p>
               <p>⚔️ Du kan udfordre hold 3 placeringer over/under dig</p>
-              <p>⏰ Udfordringer udløber efter 14 dage - manglende svar = tabt placering</p>
+              <p>⏰ Udfordringer udløber efter 14 dage</p>
             </div>
           </>
         )}
@@ -422,43 +387,29 @@ function Leaderboard() {
         <div className="modal-overlay" onClick={() => setShowChallengeModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h3 className="modal-title">⚔️ Udfordr {challengeTarget.teamName}</h3>
-            <p className="modal-text">
-              Send en officiel udfordring. Dit hold tilmeldes eventet med det samme!
-            </p>
+            <p className="modal-text">Send en officiel udfordring. Dit hold tilmeldes eventet med det samme!</p>
 
-            {/* Vælg event */}
             <div className="modal-field">
               <label>📅 Vælg Battlenight:</label>
               {battlenights.length === 0 ? (
-                <p className="modal-note">Ingen åbne events - opret et event først</p>
+                <p className="modal-note">Ingen åbne events</p>
               ) : (
-                <select
-                  className="modal-select"
-                  value={selectedBattlenight}
-                  onChange={(e) => setSelectedBattlenight(e.target.value)}
-                >
+                <select className="modal-select" value={selectedBattlenight} onChange={(e) => setSelectedBattlenight(e.target.value)}>
                   <option value="">Vælg event...</option>
                   {battlenights.map(bn => (
                     <option key={bn.id} value={bn.id}>
-                      {new Date(bn.date).toLocaleDateString('da-DK', {
-                        weekday: 'long', day: 'numeric', month: 'long'
-                      })}
+                      {new Date(bn.date).toLocaleDateString('da-DK', { weekday: 'long', day: 'numeric', month: 'long' })}
                     </option>
                   ))}
                 </select>
               )}
             </div>
 
-            {/* Vælg hold */}
             <div className="modal-field">
               <label>👥 Dit hold:</label>
               {myTeams.length > 0 && !useNewTeam ? (
                 <div>
-                  <select
-                    className="modal-select"
-                    value={selectedTeamId}
-                    onChange={(e) => setSelectedTeamId(e.target.value)}
-                  >
+                  <select className="modal-select" value={selectedTeamId} onChange={(e) => setSelectedTeamId(e.target.value)}>
                     <option value="">Vælg eksisterende hold...</option>
                     {myTeams.reduce((acc: Team[], team) => {
                       if (!acc.find(t => t.teamName === team.teamName)) acc.push(team);
@@ -467,29 +418,13 @@ function Leaderboard() {
                       <option key={team.id} value={team.id}>{team.teamName}</option>
                     ))}
                   </select>
-                  <button
-                    className="modal-new-team-btn"
-                    onClick={() => setUseNewTeam(true)}
-                  >
-                    + Opret nyt hold i stedet
-                  </button>
+                  <button className="modal-new-team-btn" onClick={() => setUseNewTeam(true)}>+ Opret nyt hold i stedet</button>
                 </div>
               ) : (
                 <div>
-                  <input
-                    type="text"
-                    className="modal-input"
-                    placeholder={`Team ${currentUser?.firstName}`}
-                    value={newTeamName}
-                    onChange={(e) => setNewTeamName(e.target.value)}
-                  />
+                  <input type="text" className="modal-input" placeholder={`Team ${currentUser?.firstName}`} value={newTeamName} onChange={(e) => setNewTeamName(e.target.value)} />
                   {myTeams.length > 0 && (
-                    <button
-                      className="modal-new-team-btn"
-                      onClick={() => setUseNewTeam(false)}
-                    >
-                      ← Brug eksisterende hold
-                    </button>
+                    <button className="modal-new-team-btn" onClick={() => setUseNewTeam(false)}>← Brug eksisterende hold</button>
                   )}
                 </div>
               )}
@@ -498,23 +433,14 @@ function Leaderboard() {
             <div className="modal-info">
               <p>ℹ️ Dit hold tilmeldes eventet med det samme</p>
               <p>Det udfordrede hold har 14 dage til at acceptere</p>
-              <p>En beskedtråd oprettes så I kan kommunikere</p>
+              <p>En beskedtråd oprettes automatisk</p>
             </div>
 
             <div className="modal-actions">
-              <button
-                className="modal-confirm-btn"
-                onClick={handleSendChallenge}
-                disabled={!selectedBattlenight || challengeSending}
-              >
+              <button className="modal-confirm-btn" onClick={handleSendChallenge} disabled={!selectedBattlenight || challengeSending}>
                 {challengeSending ? '⏳ Sender...' : '⚔️ Send udfordring'}
               </button>
-              <button
-                className="modal-cancel-btn"
-                onClick={() => setShowChallengeModal(false)}
-              >
-                Annuller
-              </button>
+              <button className="modal-cancel-btn" onClick={() => setShowChallengeModal(false)}>Annuller</button>
             </div>
           </div>
         </div>
