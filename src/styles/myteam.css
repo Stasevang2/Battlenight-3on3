@@ -1083,3 +1083,68 @@
   border: 1px solid #ff9600;
   color: #ff9600;
 }
+
+.current-signup-status {
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.current-signup-status p {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.current-signup-status.individual {
+  background: rgba(200, 169, 81, 0.08);
+  border: 1px solid rgba(200, 169, 81, 0.2);
+  color: #c8a951;
+}
+
+.current-signup-status.goalkeeper {
+  background: rgba(0, 150, 255, 0.08);
+  border: 1px solid rgba(0, 150, 255, 0.2);
+  color: #0096ff;
+}
+
+.current-signup-status.waitlist {
+  background: rgba(255, 150, 0, 0.08);
+  border: 1px solid rgba(255, 150, 0, 0.2);
+  color: #ff9600;
+}
+
+.cancel-signup-btn {
+  width: 100%;
+  padding: 8px;
+  background: rgba(255, 50, 50, 0.1);
+  border: 1px solid rgba(255, 50, 50, 0.3);
+  border-radius: 8px;
+  color: #ff6464;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-signup-btn:hover {
+  background: rgba(255, 50, 50, 0.2);
+}
+
+.cancel-signup-btn.goalkeeper {
+  border-color: rgba(0, 150, 255, 0.3);
+  color: rgba(0, 150, 255, 0.8);
+  background: rgba(0, 150, 255, 0.08);
+}
+
+.signup-btn.team {
+  background: rgba(0, 200, 100, 0.15);
+  border: 1px solid #00c864;
+  color: #00c864;
+  font-weight: 700;
+  padding: 12px;
+  border-radius: 10px;
+  width: 100%;
+  cursor: pointer;
+  margin-top: 10px;
+}
