@@ -170,14 +170,12 @@ export const respondToInvite = async (
   userId: string,
   accept: boolean
 ) => {
-  // Opdater invite status
   await updateDoc(doc(db, 'teamInvites', inviteId), {
     status: accept ? 'accepted' : 'rejected',
   });
 
   if (!accept) return;
 
-  // Hent holdet
   const teamsSnapshot = await getDocs(
     query(collection(db, 'teams'), where('__name__', '==', teamId))
   );
@@ -185,36 +183,24 @@ export const respondToInvite = async (
 
   const teamDoc = teamsSnapshot.docs[0];
   const team = teamDoc.data() as Team;
-
-  // Tæl accepterede spillere (ikke venteliste, ikke holdleder)
-  const acceptedCount = team.players.filter(
-    (p: TeamPlayer) => p.status === 'accepted'
-  ).length;
-
-  // Max 3 spillere - resten på venteliste
+  const acceptedCount = team.players.filter((p: TeamPlayer) => p.status === 'accepted').length;
   const newStatus: TeamPlayer['status'] = acceptedCount < 3 ? 'accepted' : 'waitlist';
 
   const updatedPlayers = team.players.map((p: TeamPlayer) =>
     p.userId === userId ? { ...p, status: newStatus } : p
   );
-
   await updateDoc(doc(db, 'teams', teamId), { players: updatedPlayers });
 
   if (newStatus === 'accepted') {
-    // Tilføj til hold chat
     const player = team.players.find((p: TeamPlayer) => p.userId === userId);
     if (player) {
       const { addPlayerToTeamConversation } = await import('./messageService');
       await addPlayerToTeamConversation(teamId, userId, player.firstName);
     }
-
-    // Fjern fra alle andre ventelister på samme event
     await removeFromOtherWaitlists(team.battlenightId, userId, teamId);
-
-    // Fjern fra individuel liste
     await removeIndividualSignup(team.battlenightId, userId);
+    await removeGoalkeeperSignup(team.battlenightId, userId);
 
-    // Send notifikation om at man er accepteret
     const { createNotification } = await import('./notificationService');
     await createNotification({
       toUserId: userId,
@@ -223,18 +209,16 @@ export const respondToInvite = async (
       message: `Du er nu accepteret på holdet "${team.teamName}"! Tjek hold chatten.`,
     });
   } else {
-    // På venteliste - send notifikation
     const { createNotification } = await import('./notificationService');
     await createNotification({
       toUserId: userId,
       type: 'general',
       title: '⏳ Du er på venteliste!',
-      message: `Holdet "${team.teamName}" er fuldt - du er på venteliste. Holdlederen kontakter dig hvis der bliver plads!`,
+      message: `Holdet "${team.teamName}" er fuldt - du er på venteliste!`,
     });
   }
 };
 
-// Fjern fra ventelister på andre hold til samme event
 export const removeFromOtherWaitlists = async (
   battlenightId: string,
   userId: string,
@@ -242,7 +226,6 @@ export const removeFromOtherWaitlists = async (
 ) => {
   const q = query(collection(db, 'teams'), where('battlenightId', '==', battlenightId));
   const snapshot = await getDocs(q);
-
   for (const teamDoc of snapshot.docs) {
     if (teamDoc.id === acceptedTeamId) continue;
     const team = teamDoc.data() as Team;
@@ -256,49 +239,35 @@ export const removeFromOtherWaitlists = async (
   }
 };
 
-// Fjern spiller fra hold (holdleder smider ud)
 export const removePlayerFromTeam = async (teamId: string, userId: string) => {
   const teamsSnapshot = await getDocs(
     query(collection(db, 'teams'), where('__name__', '==', teamId))
   );
   if (teamsSnapshot.empty) return;
-
   const team = teamsSnapshot.docs[0].data() as Team;
   const updatedPlayers = team.players.filter((p: TeamPlayer) => p.userId !== userId);
   await updateDoc(doc(db, 'teams', teamId), { players: updatedPlayers });
 };
 
-// Promovér spiller fra venteliste til holdet
-export const promoteFromWaitlist = async (
-  teamId: string,
-  userId: string
-) => {
+export const promoteFromWaitlist = async (teamId: string, userId: string) => {
   const teamsSnapshot = await getDocs(
     query(collection(db, 'teams'), where('__name__', '==', teamId))
   );
   if (teamsSnapshot.empty) return;
-
   const team = teamsSnapshot.docs[0].data() as Team;
-
   const updatedPlayers = team.players.map((p: TeamPlayer) =>
     p.userId === userId ? { ...p, status: 'accepted' as const } : p
   );
-
   await updateDoc(doc(db, 'teams', teamId), { players: updatedPlayers });
 
-  // Tilføj til hold chat
   const player = team.players.find((p: TeamPlayer) => p.userId === userId);
   if (player) {
     const { addPlayerToTeamConversation } = await import('./messageService');
     await addPlayerToTeamConversation(teamId, userId, player.firstName);
-
-    // Fjern fra andre ventelister
     await removeFromOtherWaitlists(team.battlenightId, userId, teamId);
-
-    // Fjern fra individuel liste
     await removeIndividualSignup(team.battlenightId, userId);
+    await removeGoalkeeperSignup(team.battlenightId, userId);
 
-    // Send notifikation
     const { createNotification } = await import('./notificationService');
     await createNotification({
       toUserId: userId,
@@ -337,6 +306,15 @@ export const signupIndividual = async (
     throw new Error('Du er allerede tilmeldt dette event på et hold');
   }
 
+  const existingGk = await getDocs(query(
+    collection(db, 'goalkeeperSignups'),
+    where('battlenightId', '==', battlenightId),
+    where('userId', '==', userId)
+  ));
+  if (!existingGk.empty) {
+    throw new Error('Du er allerede tilmeldt dette event som målmand');
+  }
+
   await addDoc(collection(db, 'individualSignups'), {
     battlenightId,
     userId,
@@ -358,21 +336,78 @@ export const removeIndividualSignup = async (battlenightId: string, userId: stri
     where('userId', '==', userId)
   );
   const snapshot = await getDocs(q);
-  for (const d of snapshot.docs) {
-    await deleteDoc(d.ref);
-  }
+  for (const d of snapshot.docs) await deleteDoc(d.ref);
 };
 
-// Hent brugers status for et event
+export const signupGoalkeeper = async (
+  battlenightId: string,
+  userId: string,
+  userName: string
+) => {
+  const existingGk = await getDocs(query(
+    collection(db, 'goalkeeperSignups'),
+    where('battlenightId', '==', battlenightId),
+    where('userId', '==', userId)
+  ));
+  if (!existingGk.empty) {
+    throw new Error('Du er allerede tilmeldt som målmand til dette event');
+  }
+
+  const allTeams = await getDocs(query(
+    collection(db, 'teams'),
+    where('battlenightId', '==', battlenightId)
+  ));
+  const onTeam = allTeams.docs.some(d => {
+    const team = d.data() as Team;
+    return team.players.some((p: TeamPlayer) =>
+      p.userId === userId && p.status === 'accepted'
+    );
+  });
+  if (onTeam) {
+    throw new Error('Du er allerede tilmeldt dette event på et hold');
+  }
+
+  const existingIndividual = await getDocs(query(
+    collection(db, 'individualSignups'),
+    where('battlenightId', '==', battlenightId),
+    where('userId', '==', userId)
+  ));
+  if (!existingIndividual.empty) {
+    throw new Error('Du er allerede tilmeldt dette event som individuel spiller');
+  }
+
+  await addDoc(collection(db, 'goalkeeperSignups'), {
+    battlenightId,
+    userId,
+    userName,
+    createdAt: Timestamp.now(),
+  });
+};
+
+export const getGoalkeeperSignups = async (battlenightId: string) => {
+  const q = query(collection(db, 'goalkeeperSignups'), where('battlenightId', '==', battlenightId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+};
+
+export const removeGoalkeeperSignup = async (battlenightId: string, userId: string) => {
+  const q = query(
+    collection(db, 'goalkeeperSignups'),
+    where('battlenightId', '==', battlenightId),
+    where('userId', '==', userId)
+  );
+  const snapshot = await getDocs(q);
+  for (const d of snapshot.docs) await deleteDoc(d.ref);
+};
+
 export const getUserEventStatus = async (
   battlenightId: string,
   userId: string
 ): Promise<{
-  status: 'team' | 'individual' | 'waitlist' | 'none';
+  status: 'team' | 'individual' | 'waitlist' | 'goalkeeper' | 'none';
   teamName?: string;
   teamId?: string;
 }> => {
-  // Tjek hold
   const allTeams = await getDocs(query(
     collection(db, 'teams'),
     where('battlenightId', '==', battlenightId)
@@ -382,24 +417,24 @@ export const getUserEventStatus = async (
     const team = teamDoc.data() as Team;
     const player = team.players.find((p: TeamPlayer) => p.userId === userId);
     if (player) {
-      if (player.status === 'accepted') {
-        return { status: 'team', teamName: team.teamName, teamId: teamDoc.id };
-      }
-      if (player.status === 'waitlist') {
-        return { status: 'waitlist', teamName: team.teamName, teamId: teamDoc.id };
-      }
+      if (player.status === 'accepted') return { status: 'team', teamName: team.teamName, teamId: teamDoc.id };
+      if (player.status === 'waitlist') return { status: 'waitlist', teamName: team.teamName, teamId: teamDoc.id };
     }
   }
 
-  // Tjek individuel
   const individual = await getDocs(query(
     collection(db, 'individualSignups'),
     where('battlenightId', '==', battlenightId),
     where('userId', '==', userId)
   ));
-  if (!individual.empty) {
-    return { status: 'individual' };
-  }
+  if (!individual.empty) return { status: 'individual' };
+
+  const goalkeeper = await getDocs(query(
+    collection(db, 'goalkeeperSignups'),
+    where('battlenightId', '==', battlenightId),
+    where('userId', '==', userId)
+  ));
+  if (!goalkeeper.empty) return { status: 'goalkeeper' };
 
   return { status: 'none' };
 };
