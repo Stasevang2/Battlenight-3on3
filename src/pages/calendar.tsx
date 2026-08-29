@@ -362,14 +362,45 @@ function Calendar() {
                                 </div>
                               )}
 
-                              {isSignedUp && (
-                                <button
-                                  className="month-signup-btn"
-                                  onClick={() => navigate(`/myteam?battlenightId=${event.id}`)}
-                                >
-                                  👀 Se tilmelding
-                                </button>
-                              )}
+                            {isSignedUp && (
+  <div className="month-signed-up-actions">
+    <button className="month-signup-btn" onClick={() => navigate(`/myteam?battlenightId=${event.id}`)}>
+      👀 Se tilmelding
+    </button>
+    {myStatus === 'individual' && (
+      <button
+        className="month-cancel-btn"
+        onClick={async () => {
+          try {
+            await handleIndividualSignup(event.id!);
+          } catch {}
+          // Afmeld i stedet
+          if (!currentUser) return;
+          const { removeIndividualSignup } = await import('../services/battlenightService');
+          await removeIndividualSignup(event.id!, currentUser.userId);
+          showMessage('✅ Du er afmeldt som individuel spiller', true);
+          await loadData();
+        }}
+      >
+        ✕ Afmeld individuel
+      </button>
+    )}
+    {myStatus === 'goalkeeper' && (
+      <button
+        className="month-cancel-btn goalkeeper"
+        onClick={async () => {
+          if (!currentUser) return;
+          const { removeGoalkeeperSignup } = await import('../services/battlenightService');
+          await removeGoalkeeperSignup(event.id!, currentUser.userId);
+          showMessage('✅ Du er afmeldt som målmand', true);
+          await loadData();
+        }}
+      >
+        ✕ Afmeld målmand
+      </button>
+    )}
+  </div>
+)}
 
                               {event.status !== 'open' && (
                                 <p className="month-closed">🔴 Lukket for tilmelding</p>
