@@ -54,7 +54,6 @@ export type LeaderboardEntry = {
   birthYear: number;
 };
 
-// Results
 export const createResult = async (data: Omit<Result, 'id' | 'createdAt'>) => {
   const docRef = await addDoc(collection(db, 'results'), {
     ...data,
@@ -82,14 +81,11 @@ export const getAllResults = async (): Promise<Result[]> => {
   return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Result));
 };
 
-// Challenges
 export const createChallenge = async (data: Omit<Challenge, 'id' | 'createdAt' | 'expiresAt'>) => {
-  // Udløber om 14 dage
   const expiresAt = new Timestamp(
     Math.floor(Date.now() / 1000) + (14 * 24 * 60 * 60),
     0
   );
-
   const docRef = await addDoc(collection(db, 'challenges'), {
     ...data,
     status: 'pending',
@@ -97,16 +93,6 @@ export const createChallenge = async (data: Omit<Challenge, 'id' | 'createdAt' |
     createdAt: Timestamp.now(),
   });
   return docRef.id;
-};
-
-export const getChallengesForTeam = async (teamId: string): Promise<Challenge[]> => {
-  const q = query(
-    collection(db, 'challenges'),
-    where('challengedTeamId', '==', teamId),
-    where('status', '==', 'pending')
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Challenge));
 };
 
 export const getPendingChallengesForLeader = async (leaderId: string): Promise<Challenge[]> => {
@@ -128,10 +114,7 @@ export const getAllPendingChallenges = async (): Promise<Challenge[]> => {
   return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Challenge));
 };
 
-export const respondToChallenge = async (
-  challengeId: string,
-  accept: boolean
-) => {
+export const respondToChallenge = async (challengeId: string, accept: boolean) => {
   const docRef = doc(db, 'challenges', challengeId);
   await updateDoc(docRef, {
     status: accept ? 'accepted' : 'rejected',
@@ -145,7 +128,6 @@ export const expireOldChallenges = async () => {
     where('status', '==', 'pending')
   );
   const snapshot = await getDocs(q);
-
   for (const challengeDoc of snapshot.docs) {
     const challenge = challengeDoc.data() as Challenge;
     if (challenge.expiresAt.seconds < now.seconds) {
@@ -154,20 +136,21 @@ export const expireOldChallenges = async () => {
   }
 };
 
-// Bygger rangliste fra alle hold og resultater
 export const buildLeaderboard = async (): Promise<LeaderboardEntry[]> => {
   const [allTeams, allResults] = await Promise.all([
     getDocs(collection(db, 'teams')),
     getAllResults(),
   ]);
 
-  const entries: { [teamId: string]: LeaderboardEntry } = {};
+  const entries: { [key: string]: LeaderboardEntry } = {};
 
-  // Tilføj alle hold til ranglisten
   allTeams.docs.forEach(teamDoc => {
     const team = teamDoc.data();
-    if (!entries[teamDoc.id] && team.teamName && team.leaderId) {
-      entries[teamDoc.id] = {
+    if (!team.teamName || !team.leaderId) return;
+
+    const key = `${team.teamName}-${team.leaderId}`;
+    if (!entries[key]) {
+      entries[key] = {
         teamId: teamDoc.id,
         teamName: team.teamName,
         leaderId: team.leaderId,
@@ -179,75 +162,51 @@ export const buildLeaderboard = async (): Promise<LeaderboardEntry[]> => {
         points: 0,
         birthYear: team.players?.[0]?.birthYear || 2012,
       };
-    } else if (entries[teamDoc.id]) {
-      entries[teamDoc.id].attended += 1;
+    } else {
+      entries[key].attended += 1;
     }
   });
 
-  // Beregn point fra resultater
   allResults
     .filter(r => r.isOfficial && r.winner && r.winner !== null)
     .forEach(result => {
-      if (!entries[result.teamAId]) {
-        entries[result.teamAId] = {
-          teamId: result.teamAId,
-          teamName: result.teamAName,
-          leaderId: '',
-          wins: 0, losses: 0, draws: 0, undecided: 0,
-          attended: 0, points: 0, birthYear: 2012,
-        };
+      const findKey = (teamId: string, teamName: string) => {
+        return Object.keys(entries).find(k =>
+          entries[k].teamId === teamId || entries[k].teamName === teamName
+        );
+      };
+
+      const keyA = findKey(result.teamAId, result.teamAName);
+      const keyB = findKey(result.teamBId, result.teamBName);
+
+      if (!keyA) {
+        const k = `${result.teamAName}-unknown`;
+        entries[k] = { teamId: result.teamAId, teamName: result.teamAName, leaderId: '', wins: 0, losses: 0, draws: 0, undecided: 0, attended: 0, points: 0, birthYear: 2012 };
       }
-      if (!entries[result.teamBId]) {
-        entries[result.teamBId] = {
-          teamId: result.teamBId,
-          teamName: result.teamBName,
-          leaderId: '',
-          wins: 0, losses: 0, draws: 0, undecided: 0,
-          attended: 0, points: 0, birthYear: 2012,
-        };
+      if (!keyB) {
+        const k = `${result.teamBName}-unknown`;
+        entries[k] = { teamId: result.teamBId, teamName: result.teamBName, leaderId: '', wins: 0, losses: 0, draws: 0, undecided: 0, attended: 0, points: 0, birthYear: 2012 };
       }
 
+      const eA = entries[keyA || `${result.teamAName}-unknown`];
+      const eB = entries[keyB || `${result.teamBName}-unknown`];
+
       if (result.winner === 'teamA') {
-        entries[result.teamAId].wins += 1;
-        entries[result.teamAId].points += 3;
-        entries[result.teamBId].losses += 1;
-        entries[result.teamBId].points += 1;
+        eA.wins += 1; eA.points += 3;
+        eB.losses += 1; eB.points += 1;
       } else if (result.winner === 'teamB') {
-        entries[result.teamBId].wins += 1;
-        entries[result.teamBId].points += 3;
-        entries[result.teamAId].losses += 1;
-        entries[result.teamAId].points += 1;
+        eB.wins += 1; eB.points += 3;
+        eA.losses += 1; eA.points += 1;
       } else if (result.winner === 'draw') {
-        entries[result.teamAId].draws += 1;
-        entries[result.teamAId].points += 2;
-        entries[result.teamBId].draws += 1;
-        entries[result.teamBId].points += 2;
+        eA.draws += 1; eA.points += 2;
+        eB.draws += 1; eB.points += 2;
       } else if (result.winner === 'undecided') {
-        entries[result.teamAId].undecided += 1;
-        entries[result.teamAId].points += 1;
-        entries[result.teamBId].undecided += 1;
-        entries[result.teamBId].points += 1;
+        eA.undecided += 1; eA.points += 1;
+        eB.undecided += 1; eB.points += 1;
       }
     });
 
-  // Konsolider hold med samme navn og holdleder
-  const consolidated: { [key: string]: LeaderboardEntry } = {};
-  Object.values(entries).forEach(entry => {
-    const key = `${entry.teamName}-${entry.leaderId}`;
-    if (!consolidated[key]) {
-      consolidated[key] = { ...entry };
-    } else {
-      consolidated[key].attended += entry.attended;
-      consolidated[key].wins += entry.wins;
-      consolidated[key].losses += entry.losses;
-      consolidated[key].draws += entry.draws;
-      consolidated[key].undecided += entry.undecided;
-      consolidated[key].points += entry.points;
-    }
-  });
-
-  // Sorter: 1) point, 2) kampe, 3) alfabetisk
-  return Object.values(consolidated).sort((a, b) => {
+  return Object.values(entries).sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
     const aGames = a.wins + a.losses + a.draws + a.undecided;
     const bGames = b.wins + b.losses + b.draws + b.undecided;
