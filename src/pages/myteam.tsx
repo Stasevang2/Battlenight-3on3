@@ -95,12 +95,12 @@ function MyTeam() {
       });
 
       const activeTeams = allMyTeams.filter(t => openBattlenightIds.includes(t.battlenightId));
+
       const uniqueTeamNames = leaderTeams.reduce((acc: Team[], team) => {
         if (!acc.find(t => t.teamName === team.teamName)) acc.push(team);
         return acc;
       }, []);
 
-      // Hent status for alle åbne events
       const statuses: { [id: string]: EventStatus } = {};
       await Promise.all(
         events.filter(e => e.status === 'open').map(async (e) => {
@@ -239,18 +239,8 @@ function MyTeam() {
       for (const userId of selectedPlayers) {
         const user = allUsers.find(u => u.userId === userId);
         if (user) {
-          await createTeamInvite({
-            teamId, teamName: finalTeamName,
-            battlenightId: selectedBattlenight.id!, battlenightDate: selectedBattlenight.date,
-            fromUserId: currentUser.userId, fromUserName: currentUser.firstName,
-            toUserId: userId, status: 'pending',
-          });
-          await createNotification({
-            toUserId: userId, type: 'team_invite',
-            title: '🏒 Du er inviteret til et hold!',
-            message: `${currentUser.firstName} inviterer dig til holdet "${finalTeamName}" til Battlenight ${formattedDate}. ⚡ Skynd dig!`,
-            data: { teamId },
-          });
+          await createTeamInvite({ teamId, teamName: finalTeamName, battlenightId: selectedBattlenight.id!, battlenightDate: selectedBattlenight.date, fromUserId: currentUser.userId, fromUserName: currentUser.firstName, toUserId: userId, status: 'pending' });
+          await createNotification({ toUserId: userId, type: 'team_invite', title: '🏒 Du er inviteret til et hold!', message: `${currentUser.firstName} inviterer dig til holdet "${finalTeamName}" til Battlenight ${formattedDate}. ⚡ Skynd dig!`, data: { teamId } });
         }
       }
 
@@ -285,12 +275,7 @@ function MyTeam() {
           showBanner(`✅ Du er nu på holdet "${invite.teamName}" til ${formattedDate}!`);
         }
       } else {
-        await createNotification({
-          toUserId: invite.fromUserId, type: 'invite_rejected',
-          title: '❌ Invitation afvist',
-          message: `${currentUser.firstName} har afvist din invitation til ${invite.teamName}`,
-          data: { teamId: invite.teamId },
-        });
+        await createNotification({ toUserId: invite.fromUserId, type: 'invite_rejected', title: '❌ Invitation afvist', message: `${currentUser.firstName} har afvist din invitation til ${invite.teamName}`, data: { teamId: invite.teamId } });
       }
 
       setMyInvites(prev => prev.filter(i => i.id !== invite.id));
@@ -316,17 +301,11 @@ function MyTeam() {
         await updateTeam(team.id!, { players: updatedPlayers });
       }
 
-      await createTeamInvite({
-        teamId: team.id!, teamName: team.teamName,
-        battlenightId: team.battlenightId, battlenightDate: battlenight?.date || '',
-        fromUserId: currentUser.userId, fromUserName: currentUser.firstName,
-        toUserId: userId, status: 'pending',
-      });
+      await createTeamInvite({ teamId: team.id!, teamName: team.teamName, battlenightId: team.battlenightId, battlenightDate: battlenight?.date || '', fromUserId: currentUser.userId, fromUserName: currentUser.firstName, toUserId: userId, status: 'pending' });
 
       const acceptedCount = team.players.filter(p => p.status === 'accepted').length;
       await createNotification({
-        toUserId: userId, type: 'team_invite',
-        title: '🏒 Du er inviteret til et hold!',
+        toUserId: userId, type: 'team_invite', title: '🏒 Du er inviteret til et hold!',
         message: acceptedCount >= 3
           ? `${currentUser.firstName} inviterer dig til "${team.teamName}" til ${formattedDate} - holdet er fuldt men du kan komme på venteliste! ⏳`
           : `${currentUser.firstName} inviterer dig til holdet "${team.teamName}" til ${formattedDate}. ⚡ Skynd dig!`,
@@ -445,7 +424,6 @@ function MyTeam() {
         {/* ============ OVERVIEW ============ */}
         {flowStep === 'overview' && (
           <>
-            {/* Ventende invitationer */}
             {myInvites.length > 0 && (
               <div className="invites-section">
                 <h2 className="section-title">
@@ -477,7 +455,6 @@ function MyTeam() {
               <p className="loading-text">⏳ Henter hold...</p>
             ) : (
               <>
-                {/* Næste battlenight */}
                 {battlenights.length > 0 && (
                   <div className="signup-section">
                     <h2 className="section-title">🏒 Næste Battlenight</h2>
@@ -488,21 +465,16 @@ function MyTeam() {
                           <h3>{new Date(bn.date).toLocaleDateString('da-DK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h3>
                           <p>⏰ {bn.time} · 💰 {bn.price} kr pr. spiller</p>
 
-                          {/* Vis nuværende status */}
                           {myStatus?.status === 'individual' && (
                             <div className="current-signup-status individual">
                               <p>🏒 Du er tilmeldt som individuel spiller</p>
-                              <button className="cancel-signup-btn" onClick={() => handleCancelIndividual(bn.id!)}>
-                                ✕ Afmeld individuel tilmelding
-                              </button>
+                              <button className="cancel-signup-btn" onClick={() => handleCancelIndividual(bn.id!)}>✕ Afmeld individuel tilmelding</button>
                             </div>
                           )}
                           {myStatus?.status === 'goalkeeper' && (
                             <div className="current-signup-status goalkeeper">
                               <p>🥅 Du er tilmeldt som målmand</p>
-                              <button className="cancel-signup-btn goalkeeper" onClick={() => handleCancelGoalkeeper(bn.id!)}>
-                                ✕ Afmeld målmand tilmelding
-                              </button>
+                              <button className="cancel-signup-btn goalkeeper" onClick={() => handleCancelGoalkeeper(bn.id!)}>✕ Afmeld målmand tilmelding</button>
                             </div>
                           )}
                           {myStatus?.status === 'waitlist' && (
@@ -510,14 +482,12 @@ function MyTeam() {
                               <p>⏳ Du er på venteliste til {myStatus.teamName}</p>
                             </div>
                           )}
+                          {myStatus?.status === 'team' && (
+                            <button className="signup-btn team" onClick={() => navigate('/myteam')}>✅ Se dit hold</button>
+                          )}
                           {(!myStatus || myStatus.status === 'none') && (
                             <button className="signup-btn" onClick={() => { setSelectedBattlenight(bn); setFlowStep('choose-type'); }}>
                               🏒 Tilmeld dig nu
-                            </button>
-                          )}
-                          {myStatus?.status === 'team' && (
-                            <button className="signup-btn team" onClick={() => navigate('/myteam')}>
-                              ✅ Se dit hold
                             </button>
                           )}
                         </div>
@@ -534,7 +504,6 @@ function MyTeam() {
                   </div>
                 )}
 
-                {/* Mine hold */}
                 {myTeams.length > 0 && (
                   <>
                     <h2 className="section-title" style={{ marginTop: '20px' }}>👥 Mine Hold</h2>
